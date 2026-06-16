@@ -913,26 +913,71 @@ function adjustHex(hex, amt) {
 }
 
 function drawCell(ctx, cx, cy, color, alpha=1, size=CELL) {
-  const px=cx*size, py=cy*size;
+  const px = cx*size, py = cy*size;
+  const r = Math.min(5, size * 0.12);
   ctx.globalAlpha = alpha;
-  const g = ctx.createLinearGradient(px,py,px+size,py+size);
-  g.addColorStop(0, lighten(color,40));
-  g.addColorStop(1, darken(color,25));
-  ctx.fillStyle = g;
+  ctx.save();
+
+  // 1. Drop shadow for depth
+  ctx.shadowColor = 'rgba(0,0,0,0.55)';
+  ctx.shadowBlur  = size * 0.18;
+  ctx.shadowOffsetX = size * 0.06;
+  ctx.shadowOffsetY = size * 0.08;
+
+  // 2. Base fill — diagonal gradient top-left bright → bottom-right dark
+  const base = ctx.createLinearGradient(px, py, px+size, py+size);
+  base.addColorStop(0,   lighten(color, 55));
+  base.addColorStop(0.4, lighten(color, 15));
+  base.addColorStop(1,   darken(color, 40));
+  ctx.fillStyle = base;
   ctx.beginPath();
-  ctx.roundRect(px+1, py+1, size-2, size-2, 4);
+  ctx.roundRect(px+1, py+1, size-2, size-2, r);
   ctx.fill();
-  // shine
-  ctx.fillStyle = 'rgba(255,255,255,.28)';
+
+  ctx.shadowColor = 'transparent';
+
+  // 3. Inner bevel — left & top bright edge
+  ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+  ctx.lineWidth = Math.max(1, size * 0.055);
   ctx.beginPath();
-  ctx.roundRect(px+3, py+3, size-6, Math.floor(size*.3), 3);
+  ctx.roundRect(px+2, py+2, size-4, size-4, r*0.7);
+  ctx.stroke();
+
+  // 4. Inner bevel — right & bottom dark edge
+  ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+  ctx.lineWidth = Math.max(1, size * 0.045);
+  ctx.beginPath();
+  ctx.roundRect(px+3, py+3, size-6, size-6, r*0.5);
+  ctx.stroke();
+
+  // 5. Gloss highlight — curved oval at top
+  const gloss = ctx.createLinearGradient(px, py+2, px, py+size*0.48);
+  gloss.addColorStop(0,   'rgba(255,255,255,0.52)');
+  gloss.addColorStop(0.6, 'rgba(255,255,255,0.10)');
+  gloss.addColorStop(1,   'rgba(255,255,255,0)');
+  ctx.fillStyle = gloss;
+  ctx.beginPath();
+  const gx1=px+size*0.15, gy1=py+size*0.06, gw=size*0.70, gh=size*0.42;
+  ctx.ellipse(gx1+gw/2, gy1+gh/2, gw/2, gh/2, 0, 0, Math.PI*2);
   ctx.fill();
-  // border
-  ctx.strokeStyle = darken(color,40);
+
+  // 6. Ambient occlusion corners — tiny dark vignette inside
+  const ao = ctx.createRadialGradient(px+size/2,py+size/2, size*0.25, px+size/2,py+size/2, size*0.72);
+  ao.addColorStop(0,   'rgba(0,0,0,0)');
+  ao.addColorStop(1,   'rgba(0,0,0,0.22)');
+  ctx.fillStyle = ao;
+  ctx.beginPath();
+  ctx.roundRect(px+1, py+1, size-2, size-2, r);
+  ctx.fill();
+
+  // 7. Outer border
+  ctx.strokeStyle = darken(color, 55);
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.roundRect(px+.5, py+.5, size-1, size-1, 4);
+  ctx.roundRect(px+0.5, py+0.5, size-1, size-1, r);
   ctx.stroke();
+
+  ctx.restore();
   ctx.globalAlpha = 1;
 }
 
@@ -940,12 +985,19 @@ function drawCell(ctx, cx, cy, color, alpha=1, size=CELL) {
 function drawGrid() {
   gx.clearRect(0, 0, gc.width, gc.height);
 
-  // background cells
+  // background cells — slight 3D inset look
   for (let r=0; r<GRID; r++) for (let c=0; c<GRID; c++) {
-    gx.fillStyle = (r+c)%2===0 ? 'rgba(255,255,255,.03)' : 'rgba(255,255,255,.015)';
-    gx.beginPath();
-    gx.roundRect(c*CELL+1, r*CELL+1, CELL-2, CELL-2, 3);
-    gx.fill();
+    const bx = c*CELL, by = r*CELL;
+    // Cell floor
+    gx.fillStyle = (r+c)%2===0 ? 'rgba(255,255,255,.04)' : 'rgba(255,255,255,.02)';
+    gx.beginPath(); gx.roundRect(bx+1, by+1, CELL-2, CELL-2, 3); gx.fill();
+    // Inset top/left shadow (makes each cell look like a pit)
+    gx.strokeStyle = 'rgba(0,0,0,0.28)';
+    gx.lineWidth = 1;
+    gx.beginPath(); gx.moveTo(bx+1, by+CELL-1); gx.lineTo(bx+1, by+1); gx.lineTo(bx+CELL-1, by+1); gx.stroke();
+    // Inset bottom/right highlight
+    gx.strokeStyle = 'rgba(255,255,255,0.06)';
+    gx.beginPath(); gx.moveTo(bx+1, by+CELL-1); gx.lineTo(bx+CELL-1, by+CELL-1); gx.lineTo(bx+CELL-1, by+1); gx.stroke();
   }
 
   // highlight drop zone
@@ -1126,7 +1178,7 @@ function placePiece(idx, piece, col, row) {
   // base points: number of cells placed, scaled by milestone multiplier
   let cells = 0;
   for (let r=0;r<piece.shape.length;r++) for (let c=0;c<piece.shape[r].length;c++) if(piece.shape[r][c]) cells++;
-  let pts = Math.round(cells * 4 * pointsMultiplier());
+  let pts = Math.round(cells * 4.4 * pointsMultiplier());
   if (powerUps.double > 0) pts *= 2;
   score += pts;
 
@@ -1244,7 +1296,7 @@ function clearLines() {
   }
 
   // Score — also scaled by milestone multiplier
-  let pts = Math.round(combo * GRID * 12 * pointsMultiplier());
+  let pts = Math.round(combo * GRID * 13.2 * pointsMultiplier());
   if (combo > 1) pts = Math.floor(pts * 1.5);
   if (powerUps.double > 0) pts *= 2;
   if (powerUps.rainbow > 0) pts = Math.floor(pts * 1.3);
