@@ -298,7 +298,39 @@ canvas.piece-canvas:active { cursor:grabbing; }
 }
 @keyframes laserColAnim { 0%{opacity:1;transform:scaleY(0)} 60%{opacity:1;transform:scaleY(1)} 100%{opacity:0;transform:scaleY(1)} }
 
-/* PARTICLE CANVAS */
+/* MULTIPLIER BAR */
+#mult-wrap {
+  width:100%;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:10px;
+  padding:6px 12px;
+  display:flex; align-items:center; gap:10px;
+}
+#mult-label { font-size:10px; color:#888; text-transform:uppercase; letter-spacing:1px; white-space:nowrap; }
+#mult-bar-track {
+  flex:1; height:8px;
+  background:rgba(255,255,255,.08);
+  border-radius:4px; overflow:visible; position:relative;
+}
+#mult-bar-fill {
+  height:100%; border-radius:4px;
+  transition: width .4s, background .4s;
+  position:relative;
+}
+#mult-bar-fill::after {
+  content:'';
+  position:absolute; right:-1px; top:-3px;
+  width:14px; height:14px;
+  border-radius:50%;
+  background:inherit;
+  box-shadow:0 0 8px currentColor;
+  border:2px solid rgba(255,255,255,.4);
+}
+#mult-value {
+  font-size:13px; font-weight:700; min-width:36px; text-align:right;
+  transition: color .4s;
+}
 #particle-canvas {
   position:fixed; inset:0;
   pointer-events:none;
@@ -369,6 +401,13 @@ canvas.piece-canvas:active { cursor:grabbing; }
 
   <!-- PROGRESS -->
   <div id="progress-wrap"><div id="progress-bar"></div></div>
+
+  <!-- MULTIPLIER -->
+  <div id="mult-wrap">
+    <span id="mult-label">Bonus</span>
+    <div id="mult-bar-track"><div id="mult-bar-fill"></div></div>
+    <span id="mult-value">×1.0</span>
+  </div>
 
   <!-- CRYSTALS -->
   <div id="crystal-row">
@@ -1236,8 +1275,11 @@ function difficultyLevel() {
 }
 
 function pointsMultiplier() {
-  // Every 1000 pts the base point rate grows
-  return 1 + Math.floor(score / 1000) * 0.12;
+  // Sine wave: starts at 0.6x, peaks at 2.0x, period = 3000 pts
+  // sin(-π/2) = -1  →  1.3 - 0.7 = 0.6  (start low)
+  // sin( π/2) = +1  →  1.3 + 0.7 = 2.0  (peak)
+  const phase = (score / 3000) * Math.PI * 2 - Math.PI / 2;
+  return Math.round((1.3 + 0.7 * Math.sin(phase)) * 100) / 100;
 }
 
 function randomPieceForDifficulty() {
@@ -1305,11 +1347,30 @@ function updateUI() {
   document.getElementById('crystal-val').textContent = crystals;
   const pct = Math.min(score/20000*100, 100);
   document.getElementById('progress-bar').style.width = pct + '%';
-  // Background theme check
   applyTheme(getThemeIdx(score));
-  // Show current multiplier in best label briefly
+  updateMultBar();
+}
+
+function updateMultBar() {
   const mult = pointsMultiplier();
-  document.getElementById('best-val').title = `×${mult.toFixed(2)} Multiplikator`;
+  // 0.6 → 2.0, map to 0–100%
+  const pct = ((mult - 0.6) / 1.4) * 100;
+  const fill = document.getElementById('mult-bar-fill');
+  const val  = document.getElementById('mult-value');
+  fill.style.width = pct + '%';
+
+  // Color: red (low) → yellow (mid) → green (high)
+  let color;
+  if (mult < 1.0)      color = '#ef4444';   // red
+  else if (mult < 1.4) color = '#f97316';   // orange
+  else if (mult < 1.7) color = '#fbbf24';   // yellow
+  else if (mult < 1.9) color = '#22c55e';   // green
+  else                 color = '#00d4ff';   // cyan (max)
+
+  fill.style.background = color;
+  fill.style.boxShadow  = `0 0 8px ${color}`;
+  val.style.color = color;
+  val.textContent = '×' + mult.toFixed(1);
 }
 
 let notifTimer;
