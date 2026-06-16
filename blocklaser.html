@@ -651,27 +651,27 @@ updateParticles();
 // ── BACKGROUND THEMES (every 1000 pts) ───────────────────────────────────────
 const BG_THEMES = [
   // 0 – Night sky (start)
-  { name:'🌌 Nacht',        bg:'linear-gradient(180deg,#0d0d1f 0%,#1a0a2e 100%)', overlay:'', sun:'', sunColor:'', wave:false, stars:true,  clouds:false, palms:false },
+  { name:'🌌 Nacht',        bg:'linear-gradient(180deg,#0d0d1f 0%,#1a0a2e 100%)', sun:'', sunColor:'', wave:false, stars:true,  clouds:false, palms:false },
   // 1000 – Morning beach
-  { name:'🌅 Morgenrot',    bg:'linear-gradient(180deg,#ff7043 0%,#ffb74d 40%,#ffd54f 70%,#e1f5fe 100%)', overlay:'rgba(255,180,0,.08)', sun:'#FFD700', sunColor:'0 0 80px 30px rgba(255,220,50,.6)', wave:true,  stars:false, clouds:true,  palms:false },
+  { name:'🌅 Morgenrot',    bg:'linear-gradient(180deg,#5c2a00 0%,#8b4513 35%,#c0682a 65%,#1a2a3a 100%)', sun:'#e8823a', sunColor:'0 0 60px 20px rgba(230,130,50,.4)', wave:true,  stars:false, clouds:true,  palms:false },
   // 2000 – Summer beach
-  { name:'🏖️ Sommer',       bg:'linear-gradient(180deg,#29b6f6 0%,#4fc3f7 40%,#b3e5fc 70%,#f9d48b 100%)', overlay:'', sun:'#FFD700', sunColor:'0 0 100px 40px rgba(255,230,0,.5)', wave:true, stars:false, clouds:true, palms:true },
-  // 3000 – Tropical noon
-  { name:'🌴 Tropen',       bg:'linear-gradient(180deg,#00bcd4 0%,#26c6da 35%,#80deea 65%,#a5d6a7 100%)', overlay:'rgba(0,200,100,.06)', sun:'#FFF176', sunColor:'0 0 120px 50px rgba(255,255,100,.55)', wave:true, stars:false, clouds:true, palms:true },
+  { name:'🏖️ Sommer',       bg:'linear-gradient(180deg,#0d2d45 0%,#1a4a6e 40%,#1e6080 70%,#2a4030 100%)', sun:'#c8a020', sunColor:'0 0 70px 25px rgba(200,160,30,.35)', wave:true, stars:false, clouds:true, palms:true },
+  // 3000 – Tropical
+  { name:'🌴 Tropen',       bg:'linear-gradient(180deg,#0a2a1a 0%,#0d3d28 35%,#0e4a30 65%,#1a3020 100%)', sun:'#b8b820', sunColor:'0 0 80px 30px rgba(180,180,20,.3)', wave:true, stars:false, clouds:true, palms:true },
   // 4000 – Sunflower field
-  { name:'🌻 Sonnenblumen', bg:'linear-gradient(180deg,#64b5f6 0%,#90caf9 40%,#fff59d 70%,#f9a825 100%)', overlay:'rgba(255,200,0,.07)', sun:'#FF8F00', sunColor:'0 0 100px 40px rgba(255,160,0,.5)', wave:false, stars:false, clouds:true, palms:false },
-  // 5000 – Coral reef / lagoon
-  { name:'🐠 Lagune',       bg:'linear-gradient(180deg,#0097a7 0%,#00bcd4 35%,#4dd0e1 60%,#b2ebf2 100%)', overlay:'rgba(0,150,200,.1)', sun:'#E0F7FA', sunColor:'0 0 80px 30px rgba(0,230,255,.4)', wave:true, stars:false, clouds:false, palms:true },
-  // 6000 – Golden sunset
-  { name:'🌇 Sonnenunter.', bg:'linear-gradient(180deg,#6a1b9a 0%,#e91e63 25%,#ff5722 50%,#ff9800 75%,#ffd54f 100%)', overlay:'rgba(255,100,0,.08)', sun:'#FF6F00', sunColor:'0 0 120px 50px rgba(255,120,0,.6)', wave:true, stars:false, clouds:true, palms:true },
-  // 7000 – Purple dusk
-  { name:'🌆 Dämmerung',    bg:'linear-gradient(180deg,#1a237e 0%,#7b1fa2 30%,#e91e63 60%,#ff5722 100%)', overlay:'rgba(150,0,200,.1)', sun:'#CE93D8', sunColor:'0 0 80px 30px rgba(200,100,255,.4)', wave:true, stars:true, clouds:false, palms:true },
-  // 8000 – Rainbow sky
-  { name:'🌈 Regenbogen',   bg:'linear-gradient(180deg,#ff1744 0%,#ff9100 15%,#ffea00 30%,#00e676 45%,#00b0ff 60%,#d500f9 80%,#311b92 100%)', overlay:'rgba(255,255,255,.05)', sun:'#fff', sunColor:'0 0 60px 20px rgba(255,255,255,.3)', wave:false, stars:false, clouds:true, palms:false },
+  { name:'🌻 Sonnenblumen', bg:'linear-gradient(180deg,#1a2a10 0%,#243515 40%,#2e3d10 70%,#3a2a05 100%)', sun:'#c08000', sunColor:'0 0 70px 25px rgba(190,130,0,.4)', wave:false, stars:false, clouds:true, palms:false },
+  // 5000 – Lagoon
+  { name:'🐠 Lagune',       bg:'linear-gradient(180deg,#001a2e 0%,#002a3e 35%,#003a4a 60%,#001e28 100%)', sun:'#208090', sunColor:'0 0 60px 20px rgba(0,160,200,.3)', wave:true, stars:false, clouds:false, palms:true },
+  // 6000 – Sunset
+  { name:'🌇 Sonnenunter.', bg:'linear-gradient(180deg,#1a0028 0%,#3a0a1e 25%,#6a1a00 55%,#3a1a00 100%)', sun:'#c04000', sunColor:'0 0 90px 35px rgba(200,60,0,.45)', wave:true, stars:false, clouds:true, palms:true },
+  // 7000 – Dusk
+  { name:'🌆 Dämmerung',    bg:'linear-gradient(180deg,#0a0520 0%,#200835 30%,#3a0a28 60%,#1a0a10 100%)', sun:'#7040a0', sunColor:'0 0 60px 20px rgba(120,50,180,.3)', wave:true, stars:true, clouds:false, palms:true },
+  // 8000 – Dark rainbow
+  { name:'🌈 Regenbogen',   bg:'linear-gradient(180deg,#1a000a 0%,#1a0820 20%,#001a0a 40%,#0a0a20 60%,#1a0a00 80%,#0d0d1f 100%)', sun:'#604080', sunColor:'0 0 50px 15px rgba(100,50,150,.25)', wave:false, stars:true, clouds:false, palms:false },
   // 9000 – Volcano
-  { name:'🌋 Vulkan',       bg:'linear-gradient(180deg,#212121 0%,#4e342e 30%,#bf360c 60%,#ff6f00 85%,#ffca28 100%)', overlay:'rgba(255,50,0,.1)', sun:'#FF3D00', sunColor:'0 0 120px 60px rgba(255,60,0,.7)', wave:false, stars:false, clouds:false, palms:false },
-  // 10000+ – Cosmic summer
-  { name:'🚀 Kosmos',       bg:'linear-gradient(180deg,#0d0d1f 0%,#4a0080 30%,#00d4ff 60%,#ff0080 100%)', overlay:'rgba(255,0,255,.06)', sun:'#00d4ff', sunColor:'0 0 120px 60px rgba(0,212,255,.5)', wave:false, stars:true, clouds:false, palms:false },
+  { name:'🌋 Vulkan',       bg:'linear-gradient(180deg,#0a0500 0%,#1e0800 30%,#3a0800 60%,#5a1000 100%)', sun:'#c02000', sunColor:'0 0 100px 40px rgba(200,30,0,.5)', wave:false, stars:false, clouds:false, palms:false },
+  // 10000+ – Cosmic
+  { name:'🚀 Kosmos',       bg:'linear-gradient(180deg,#050010 0%,#150030 30%,#001030 60%,#100020 100%)', sun:'#0060a0', sunColor:'0 0 80px 30px rgba(0,100,200,.35)', wave:false, stars:true, clouds:false, palms:false },
 ];
 
 let currentThemeIdx = -1;
@@ -1087,7 +1087,7 @@ function placePiece(idx, piece, col, row) {
   // base points: number of cells placed, scaled by milestone multiplier
   let cells = 0;
   for (let r=0;r<piece.shape.length;r++) for (let c=0;c<piece.shape[r].length;c++) if(piece.shape[r][c]) cells++;
-  let pts = Math.round(cells * 10 * pointsMultiplier());
+  let pts = Math.round(cells * 4 * pointsMultiplier());
   if (powerUps.double > 0) pts *= 2;
   score += pts;
 
@@ -1201,11 +1201,11 @@ function clearLines() {
       showNotif('💥 PERFEKTE LEERUNG! Riesiger Bonus!');
     }, cellsToExplode.length * 18 + 50);
     // Bonus points for full clear
-    score += 5000;
+    score += 1500;
   }
 
   // Score — also scaled by milestone multiplier
-  let pts = Math.round(combo * GRID * 30 * pointsMultiplier());
+  let pts = Math.round(combo * GRID * 12 * pointsMultiplier());
   if (combo > 1) pts = Math.floor(pts * 1.5);
   if (powerUps.double > 0) pts *= 2;
   if (powerUps.rainbow > 0) pts = Math.floor(pts * 1.3);
@@ -1237,7 +1237,7 @@ function difficultyLevel() {
 
 function pointsMultiplier() {
   // Every 1000 pts the base point rate grows
-  return 1 + Math.floor(score / 1000) * 0.25;
+  return 1 + Math.floor(score / 1000) * 0.12;
 }
 
 function randomPieceForDifficulty() {
