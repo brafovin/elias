@@ -186,6 +186,21 @@ canvas.piece-canvas:active { cursor:grabbing; }
   pointer-events:none;
   z-index:1000;
   display:none;
+  top:0; left:0;
+  will-change:transform;
+  transition: opacity .12s;
+}
+
+/* SNAP ANIMATION */
+@keyframes cellSnap {
+  0%   { transform:scale(1.22); opacity:.7; }
+  60%  { transform:scale(0.93); opacity:1; }
+  100% { transform:scale(1);    opacity:1; }
+}
+.snap-overlay {
+  position:fixed; pointer-events:none; z-index:200;
+  animation: cellSnap .22s cubic-bezier(.22,.68,0,1.4) forwards;
+  transform-origin: center;
 }
 
 /* CRYSTAL ROW */
@@ -1091,70 +1106,101 @@ function onTouchMove(e) { e.preventDefault(); const t=e.touches[0]; moveDrag(t.c
 function onTouchEnd(e)  { const t=e.changedTouches[0]; endDrag(t.clientX,t.clientY); window.removeEventListener('touchmove',onTouchMove); window.removeEventListener('touchend',onTouchEnd); }
 
 // ── DRAG LOGIC ────────────────────────────────────────────────────────────────
+let mouseX = 0, mouseY = 0; // live cursor position
+let dragRafId = null;        // RAF loop id
+
 function startDrag(idx, cx, cy) {
   const piece = trayPieces[idx];
   if (!piece) return;
 
-  const ghost = document.getElementById('drag-ghost');
+  const ghost  = document.getElementById('drag-ghost');
   const ghostC = document.getElementById('ghost-canvas');
   const rows = piece.shape.length, cols = piece.shape[0].length;
-  const pad = 4;
-  ghostC.width  = cols * CELL + pad*2;
-  ghostC.height = rows * CELL + pad*2;
-  const gx2 = ghostC.getContext('2d');
-  gx2.clearRect(0,0,ghostC.width,ghostC.height);
+  ghostC.width  = cols * CELL + 8;
+  ghostC.height = rows * CELL + 8;
+  const gctx = ghostC.getContext('2d');
+  gctx.clearRect(0, 0, ghostC.width, ghostC.height);
   for (let r=0; r<rows; r++) for (let c=0; c<cols; c++) {
-    if (piece.shape[r][c]) drawCell(gx2, c, r, piece.color, .85, CELL);
+    if (piece.shape[r][c]) drawCell(gctx, c, r, piece.color, .88, CELL);
   }
 
-  // center ghost on cursor
-  const offX = ghostC.width/2;
-  const offY = ghostC.height/2;
+  const offX = ghostC.width / 2;
+  const offY = ghostC.height / 2;
+  mouseX = cx; mouseY = cy;
 
   ghost.style.display = 'block';
-  ghost.style.left = (cx - offX) + 'px';
-  ghost.style.top  = (cy - offY) + 'px';
+  ghost.style.transform = `translate(${cx - offX}px, ${cy - offY}px)`;
 
   dragging = { idx, piece, offX, offY, ghostCol:-1, ghostRow:-1 };
-  updateGhostPos(cx, cy);
+
+  // RAF loop — decouples grid redraw from input events
+  function dragLoop() {
+    if (!dragging) return;
+    ghost.style.transform = `translate(${mouseX - dragging.offX}px, ${mouseY - dragging.offY}px)`;
+    const changed = updateGhostCell(mouseX, mouseY);
+    if (changed) drawGrid();
+    dragRafId = requestAnimationFrame(dragLoop);
+  }
+  dragRafId = requestAnimationFrame(dragLoop);
+
+  updateGhostCell(cx, cy);
   drawGrid();
 }
 
 function moveDrag(cx, cy) {
-  if (!dragging) return;
-  const ghost = document.getElementById('drag-ghost');
-  ghost.style.left = (cx - dragging.offX) + 'px';
-  ghost.style.top  = (cy - dragging.offY) + 'px';
-  updateGhostPos(cx, cy);
-  drawGrid();
+  mouseX = cx; mouseY = cy; // just store — RAF does the rest
 }
 
-function updateGhostPos(cx, cy) {
-  if (!dragging) return;
+// Returns true if grid cell changed
+function updateGhostCell(cx, cy) {
+  if (!dragging) return false;
   const rect = gc.getBoundingClientRect();
   const piece = dragging.piece;
-  // map cursor to grid cell
-  const gridX = cx - rect.left;
-  const gridY = cy - rect.top;
-  const col = Math.floor(gridX / CELL) - Math.floor(piece.shape[0].length / 2);
-  const row = Math.floor(gridY / CELL) - Math.floor(piece.shape.length / 2);
+  const col = Math.floor((cx - rect.left) / CELL) - Math.floor(piece.shape[0].length / 2);
+  const row = Math.floor((cy - rect.top)  / CELL) - Math.floor(piece.shape.length  / 2);
+  if (col === dragging.ghostCol && row === dragging.ghostRow) return false;
   dragging.ghostCol = col;
   dragging.ghostRow = row;
+  return true;
 }
+
+// Legacy alias used elsewhere
+function updateGhostPos(cx, cy) { updateGhostCell(cx, cy); }
 
 function endDrag(cx, cy) {
   if (!dragging) return;
-  document.getElementById('drag-ghost').style.display = 'none';
-  updateGhostPos(cx, cy);
+  cancelAnimationFrame(dragRafId);
+  updateGhostCell(cx, cy);
+
+  const ghost = document.getElementById('drag-ghost');
+  ghost.style.display = 'none';
 
   const {idx, piece, ghostCol, ghostRow} = dragging;
   dragging = null;
 
   if (ghostRow !== -1 && canDrop(piece.shape, ghostCol, ghostRow)) {
+    snapAnimate(piece, ghostCol, ghostRow);
     placePiece(idx, piece, ghostCol, ghostRow);
   }
 
   drawGrid();
+}
+
+// Brief scale-bounce overlay on the placed cells
+function snapAnimate(piece, col, row) {
+  const rect = gc.getBoundingClientRect();
+  const rows = piece.shape.length, cols = piece.shape[0].length;
+  const w = cols * CELL, h = rows * CELL;
+  const sc = document.createElement('canvas');
+  sc.className = 'snap-overlay';
+  sc.width  = w; sc.height = h;
+  sc.style.cssText = `width:${w}px;height:${h}px;left:${rect.left + col*CELL}px;top:${rect.top + row*CELL}px;`;
+  const sctx = sc.getContext('2d');
+  for (let r=0; r<rows; r++) for (let c=0; c<cols; c++) {
+    if (piece.shape[r][c]) drawCell(sctx, c, r, piece.color, 1, CELL);
+  }
+  document.body.appendChild(sc);
+  setTimeout(() => sc.remove(), 240);
 }
 
 // ── GAME LOGIC ────────────────────────────────────────────────────────────────
