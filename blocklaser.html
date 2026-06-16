@@ -240,11 +240,52 @@ canvas.piece-canvas:active { cursor:grabbing; }
   animation:laserColAnim .35s forwards;
 }
 @keyframes laserColAnim { 0%{opacity:1;transform:scaleY(0)} 60%{opacity:1;transform:scaleY(1)} 100%{opacity:0;transform:scaleY(1)} }
+
+/* PARTICLE CANVAS */
+#particle-canvas {
+  position:fixed; inset:0;
+  pointer-events:none;
+  z-index:350;
+  width:100%; height:100%;
+}
+
+/* SHOCKWAVE */
+.shockwave {
+  position:fixed;
+  border-radius:50%;
+  border:3px solid rgba(255,255,255,.8);
+  pointer-events:none;
+  z-index:360;
+  animation:shockwaveAnim .6s forwards;
+  transform:translate(-50%,-50%) scale(0);
+}
+@keyframes shockwaveAnim {
+  0%   { transform:translate(-50%,-50%) scale(0); opacity:1; }
+  100% { transform:translate(-50%,-50%) scale(4); opacity:0; }
+}
+
+/* BOOM TEXT */
+.boom-text {
+  position:fixed;
+  font-size:28px;
+  font-weight:900;
+  pointer-events:none;
+  z-index:360;
+  animation:boomTextAnim .7s forwards;
+  transform:translate(-50%,-50%);
+  text-shadow:0 0 12px currentColor;
+}
+@keyframes boomTextAnim {
+  0%   { opacity:1; transform:translate(-50%,-50%) scale(.5); }
+  30%  { opacity:1; transform:translate(-50%,-70%) scale(1.3); }
+  100% { opacity:0; transform:translate(-50%,-130%) scale(.8); }
+}
 </style>
 </head>
 <body>
 <div id="stars"></div>
 <div id="flash"></div>
+<canvas id="particle-canvas"></canvas>
 <div id="notif">⚡ Blocklaser</div>
 <div id="drag-ghost"><canvas id="ghost-canvas"></canvas></div>
 
@@ -327,6 +368,142 @@ canvas.piece-canvas:active { cursor:grabbing; }
 </div>
 
 <script>
+// ── PARTICLE SYSTEM ───────────────────────────────────────────────────────────
+const pc2 = document.getElementById('particle-canvas');
+const px2 = pc2.getContext('2d');
+let particles = [];
+
+function resizeParticleCanvas() {
+  pc2.width  = window.innerWidth;
+  pc2.height = window.innerHeight;
+}
+resizeParticleCanvas();
+window.addEventListener('resize', resizeParticleCanvas);
+
+function spawnCellBoom(screenX, screenY, color) {
+  const count = 12;
+  for (let i = 0; i < count; i++) {
+    const angle = (Math.PI * 2 / count) * i + (Math.random() - .5) * .4;
+    const speed = 2.5 + Math.random() * 4;
+    particles.push({
+      x: screenX, y: screenY,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 1,
+      r: 3 + Math.random() * 4,
+      color,
+      alpha: 1,
+      decay: .03 + Math.random() * .03,
+      gravity: .18,
+      type: 'circle',
+    });
+  }
+  // Sparks
+  for (let i = 0; i < 8; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 4 + Math.random() * 6;
+    particles.push({
+      x: screenX, y: screenY,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 2,
+      r: 1.5,
+      color: '#fff',
+      alpha: 1,
+      decay: .05 + Math.random() * .04,
+      gravity: .25,
+      type: 'spark',
+      len: 6 + Math.random() * 8,
+    });
+  }
+}
+
+function spawnBigExplosion(screenX, screenY) {
+  const count = 80;
+  const colors = ['#ff0080','#ff4400','#fbbf24','#22c55e','#00d4ff','#a855f7','#fff'];
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 3 + Math.random() * 12;
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    particles.push({
+      x: screenX, y: screenY,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 3,
+      r: 4 + Math.random() * 8,
+      color,
+      alpha: 1,
+      decay: .012 + Math.random() * .018,
+      gravity: .2,
+      type: 'circle',
+    });
+  }
+  // Big sparks
+  for (let i = 0; i < 40; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 8 + Math.random() * 16;
+    particles.push({
+      x: screenX, y: screenY,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 4,
+      r: 2,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      alpha: 1,
+      decay: .02 + Math.random() * .02,
+      gravity: .3,
+      type: 'spark',
+      len: 12 + Math.random() * 16,
+    });
+  }
+  // Shockwave ring
+  const sw = document.createElement('div');
+  sw.className = 'shockwave';
+  sw.style.cssText = `left:${screenX}px;top:${screenY}px;width:80px;height:80px;border-color:#a855f7;box-shadow:0 0 20px #a855f7;`;
+  document.body.appendChild(sw);
+  setTimeout(() => sw.remove(), 700);
+  const sw2 = document.createElement('div');
+  sw2.className = 'shockwave';
+  sw2.style.cssText = `left:${screenX}px;top:${screenY}px;width:60px;height:60px;border-color:#00d4ff;box-shadow:0 0 20px #00d4ff;animation-delay:.1s;`;
+  document.body.appendChild(sw2);
+  setTimeout(() => sw2.remove(), 800);
+}
+
+function showBoomText(screenX, screenY, text, color) {
+  const el = document.createElement('div');
+  el.className = 'boom-text';
+  el.textContent = text;
+  el.style.cssText = `left:${screenX}px;top:${screenY}px;color:${color};`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 750);
+}
+
+function updateParticles() {
+  px2.clearRect(0, 0, pc2.width, pc2.height);
+  particles = particles.filter(p => p.alpha > 0.02);
+  for (const p of particles) {
+    p.x  += p.vx;
+    p.y  += p.vy;
+    p.vy += p.gravity;
+    p.vx *= .97;
+    p.alpha -= p.decay;
+
+    px2.globalAlpha = Math.max(0, p.alpha);
+    if (p.type === 'spark') {
+      px2.strokeStyle = p.color;
+      px2.lineWidth = p.r;
+      px2.beginPath();
+      px2.moveTo(p.x, p.y);
+      px2.lineTo(p.x - p.vx * p.len * .3, p.y - p.vy * p.len * .3);
+      px2.stroke();
+    } else {
+      px2.fillStyle = p.color;
+      px2.beginPath();
+      px2.arc(p.x, p.y, Math.max(.5, p.r * p.alpha), 0, Math.PI * 2);
+      px2.fill();
+    }
+  }
+  px2.globalAlpha = 1;
+  requestAnimationFrame(updateParticles);
+}
+updateParticles();
+
 // ── STARS ─────────────────────────────────────────────────────────────────────
 for (let i = 0; i < 100; i++) {
   const s = document.createElement('div');
@@ -678,8 +855,25 @@ function clearLines() {
   const total = rowsToClear.length + colsToClear.length;
   if (total === 0) return;
 
-  // Laser effects
   const rect = gc.getBoundingClientRect();
+
+  // Collect cells to explode before clearing
+  const cellsToExplode = [];
+  const alreadyQueued = new Set();
+  rowsToClear.forEach(r => {
+    for (let c=0; c<GRID; c++) {
+      const key = `${r},${c}`;
+      if (!alreadyQueued.has(key)) { cellsToExplode.push({r, c, color: board[r][c]||'#a855f7'}); alreadyQueued.add(key); }
+    }
+  });
+  colsToClear.forEach(c => {
+    for (let r=0; r<GRID; r++) {
+      const key = `${r},${c}`;
+      if (!alreadyQueued.has(key)) { cellsToExplode.push({r, c, color: board[r][c]||'#a855f7'}); alreadyQueued.add(key); }
+    }
+  });
+
+  // Laser beam effects
   rowsToClear.forEach(r => {
     const el = document.createElement('div');
     el.className = 'laser-line';
@@ -695,14 +889,44 @@ function clearLines() {
     setTimeout(() => el.remove(), 400);
   });
 
+  // Staggered cell boom particles
+  cellsToExplode.forEach((cell, i) => {
+    setTimeout(() => {
+      const sx = rect.left + cell.c * CELL + CELL/2;
+      const sy = rect.top  + cell.r * CELL + CELL/2;
+      spawnCellBoom(sx, sy, cell.color);
+    }, i * 18);
+  });
+
+  // Boom text for combos
+  const combo = rowsToClear.length + colsToClear.length;
+  const centerX = rect.left + gc.width/2;
+  const centerY = rect.top  + gc.height/2;
+  if (combo === 1)      showBoomText(centerX, centerY - 30, 'BOOM!',   '#fbbf24');
+  else if (combo === 2) showBoomText(centerX, centerY - 30, 'DOUBLE!', '#f97316');
+  else if (combo === 3) showBoomText(centerX, centerY - 30, 'TRIPLE!', '#ef4444');
+  else if (combo >= 4)  showBoomText(centerX, centerY - 30, 'LASER!!', '#ff0080');
+
   // Clear cells
   rowsToClear.forEach(r => { for(let c=0;c<GRID;c++) board[r][c]=0; });
   colsToClear.forEach(c => { for(let r=0;r<GRID;r++) board[r][c]=0; });
 
+  // Check if board is completely empty → BIG EXPLOSION
+  const boardEmpty = board.every(row => row.every(c => !c));
+  if (boardEmpty) {
+    setTimeout(() => {
+      spawnBigExplosion(centerX, centerY);
+      triggerFlash();
+      showBoomText(centerX, centerY, '💥 PERFEKT!', '#00d4ff');
+      showNotif('💥 PERFEKTE LEERUNG! Riesiger Bonus!');
+    }, cellsToExplode.length * 18 + 50);
+    // Bonus points for full clear
+    score += 5000;
+  }
+
   // Score
-  const combo = rowsToClear.length + colsToClear.length;
   let pts = combo * GRID * 30;
-  if (combo > 1) pts = Math.floor(pts * 1.5); // combo bonus
+  if (combo > 1) pts = Math.floor(pts * 1.5);
   if (powerUps.double > 0) pts *= 2;
   if (powerUps.rainbow > 0) pts = Math.floor(pts * 1.3);
 
@@ -714,7 +938,7 @@ function clearLines() {
   pop.className = 'spop';
   pop.textContent = '+' + pts.toLocaleString('de-DE');
   pop.style.left = (rect.left + gc.width/2 - 40) + 'px';
-  pop.style.top  = (rect.top + gc.height/2) + 'px';
+  pop.style.top  = (rect.top + gc.height/2 + 30) + 'px';
   document.body.appendChild(pop);
   setTimeout(() => pop.remove(), 1000);
 
