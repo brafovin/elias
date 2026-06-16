@@ -2,1237 +2,937 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Blocklaser</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 
-  body {
-    background: #0a0a1a;
-    color: #fff;
-    font-family: 'Segoe UI', sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    overflow: hidden;
-  }
+body {
+  background: #0d0d1f;
+  color: #fff;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  overflow: hidden;
+  user-select: none;
+}
 
-  #stars {
-    position: fixed;
-    width: 100%; height: 100%;
-    pointer-events: none;
-    z-index: 0;
-  }
+/* STARS */
+#stars { position:fixed; inset:0; pointer-events:none; z-index:0; }
+.star { position:absolute; background:#fff; border-radius:50%; animation:twinkle 2s infinite alternate; }
+@keyframes twinkle { from{opacity:.15} to{opacity:.9} }
 
-  .star {
-    position: absolute;
-    background: #fff;
-    border-radius: 50%;
-    animation: twinkle 2s infinite alternate;
-  }
+#ui { position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; width:100%; max-width:480px; padding:12px 12px 0; gap:10px; }
 
-  @keyframes twinkle {
-    from { opacity: 0.2; }
-    to { opacity: 1; }
-  }
+/* TOP BAR */
+#topbar {
+  display:flex; align-items:center; justify-content:space-between;
+  width:100%; gap:8px;
+}
 
-  #app {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    gap: 20px;
-    align-items: flex-start;
-  }
+.score-box {
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:12px;
+  padding:8px 16px;
+  text-align:center;
+  flex:1;
+}
+.score-box .label { font-size:9px; text-transform:uppercase; letter-spacing:2px; color:#666; }
+.score-box .value { font-size:22px; font-weight:700; color:#fff; }
 
-  /* LEFT PANEL */
-  #left-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    width: 160px;
-  }
+#sword-btn {
+  font-size:32px;
+  filter: grayscale(1) brightness(.4);
+  transition: filter .4s, transform .3s;
+  cursor:default;
+  padding:4px 8px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.04);
+}
+#sword-btn.unlocked {
+  filter:none;
+  animation:swordPulse 2s infinite alternate;
+  cursor:pointer;
+}
+@keyframes swordPulse {
+  from { box-shadow:0 0 10px #ff0080,0 0 20px #7928ca; transform:scale(1); }
+  to   { box-shadow:0 0 20px #00d4ff,0 0 40px #a855f7; transform:scale(1.08); }
+}
 
-  .panel-box {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 12px;
-    padding: 14px;
-  }
+/* PROGRESS BAR */
+#progress-wrap {
+  width:100%;
+  background:rgba(255,255,255,.07);
+  border-radius:6px; height:8px; overflow:hidden;
+  border:1px solid rgba(255,255,255,.08);
+}
+#progress-bar {
+  height:100%;
+  background:linear-gradient(90deg,#00d4ff,#a855f7,#ff0080);
+  border-radius:6px;
+  transition:width .4s;
+  width:0%;
+}
 
-  .panel-box h3 {
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    color: #888;
-    margin-bottom: 8px;
-  }
+/* GRID */
+#grid-wrap {
+  position:relative;
+}
+#grid-canvas {
+  display:block;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.1);
+  box-shadow:0 0 40px rgba(0,212,255,.15), 0 0 80px rgba(168,85,247,.08);
+  touch-action:none;
+}
 
-  .big-number {
-    font-size: 28px;
-    font-weight: bold;
-    color: #fff;
-  }
+/* TRAY */
+#tray {
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+  width:100%;
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;
+  padding:10px 4px;
+  gap:4px;
+  min-height:110px;
+}
 
-  .score-bar-wrap {
-    margin-top: 8px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 4px;
-    height: 6px;
-    overflow: hidden;
-  }
+.tray-slot {
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:10px;
+  min-height:90px;
+  position:relative;
+  transition:background .2s;
+}
+.tray-slot.used { opacity:.2; }
 
-  #score-bar {
-    height: 100%;
-    background: linear-gradient(90deg, #00d4ff, #a855f7);
-    border-radius: 4px;
-    transition: width 0.3s;
-    width: 0%;
-  }
+canvas.piece-canvas {
+  cursor:grab;
+  touch-action:none;
+  display:block;
+}
+canvas.piece-canvas:active { cursor:grabbing; }
 
-  .score-label {
-    font-size: 10px;
-    color: #666;
-    margin-top: 4px;
-  }
+/* DRAG GHOST */
+#drag-ghost {
+  position:fixed;
+  pointer-events:none;
+  z-index:1000;
+  display:none;
+}
 
-  /* NEXT PIECE */
-  #next-canvas {
-    display: block;
-    margin: 0 auto;
-  }
+/* CRYSTAL ROW */
+#crystal-row {
+  display:none;
+  align-items:center;
+  gap:8px;
+  background:rgba(168,85,247,.1);
+  border:1px solid rgba(168,85,247,.25);
+  border-radius:10px;
+  padding:6px 14px;
+  font-size:13px;
+  font-weight:600;
+  color:#c084fc;
+}
+#crystal-row.visible { display:flex; }
 
-  /* CONTROLS */
-  .control-row {
-    display: flex;
-    justify-content: space-between;
-    font-size: 11px;
-    color: #aaa;
-    margin-bottom: 4px;
-  }
+/* OVERLAYS */
+.overlay {
+  position:fixed; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  z-index:500;
+  background:rgba(5,5,20,.88);
+  backdrop-filter:blur(10px);
+}
+.obox {
+  background:linear-gradient(135deg,rgba(20,20,45,.97),rgba(10,10,25,.97));
+  border:1px solid rgba(255,255,255,.13);
+  border-radius:18px;
+  padding:32px 28px;
+  text-align:center;
+  max-width:400px;
+  width:92vw;
+}
+.obox h2 { font-size:24px; margin-bottom:10px; }
+.obox p  { color:#aaa; line-height:1.6; font-size:14px; margin-bottom:20px; }
 
-  .key {
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 4px;
-    padding: 1px 6px;
-    font-size: 10px;
-    color: #fff;
-  }
+.obtn {
+  padding:12px 30px;
+  background:linear-gradient(135deg,#00d4ff,#a855f7);
+  border:none; border-radius:9px;
+  color:#fff; font-size:15px; font-weight:700;
+  cursor:pointer; transition:transform .15s, box-shadow .2s;
+}
+.obtn:hover { transform:scale(1.05); box-shadow:0 0 24px rgba(168,85,247,.6); }
+.obtn.secondary {
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.15);
+  margin-left:10px;
+}
 
-  /* GAME CANVAS */
-  #game-wrap {
-    position: relative;
-  }
+/* SHOP */
+.shop-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0; }
+.sitem {
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:10px;
+  padding:12px 8px;
+  cursor:pointer;
+  transition:all .2s;
+  text-align:center;
+}
+.sitem:hover:not(.cant) { border-color:#a855f7; background:rgba(168,85,247,.12); transform:translateY(-2px); }
+.sitem.cant { opacity:.35; cursor:not-allowed; }
+.sitem .si { font-size:26px; }
+.sitem .sn { font-size:11px; font-weight:700; margin:4px 0 2px; }
+.sitem .sd { font-size:9px; color:#888; line-height:1.4; margin-bottom:6px; }
+.sitem .sp { font-size:10px; color:#a855f7; font-weight:700; }
 
-  #game-canvas {
-    display: block;
-    border-radius: 8px;
-    box-shadow: 0 0 40px rgba(0, 212, 255, 0.2), 0 0 80px rgba(168, 85, 247, 0.1);
-    border: 1px solid rgba(255,255,255,0.1);
-  }
+/* FLASH */
+#flash { position:fixed; inset:0; pointer-events:none; z-index:400; opacity:0; background:linear-gradient(135deg,#ff0080,#7928ca,#00d4ff); }
+@keyframes flashAnim { 0%{opacity:0} 20%{opacity:.7} 50%{opacity:.2} 75%{opacity:.5} 100%{opacity:0} }
 
-  /* LASER SWORD ACTIVATED OVERLAY */
-  #laser-flash {
-    position: fixed;
-    inset: 0;
-    background: linear-gradient(135deg, #ff0080, #7928ca, #00d4ff);
-    opacity: 0;
-    pointer-events: none;
-    z-index: 100;
-    animation: none;
-  }
+/* NOTIF */
+#notif {
+  position:fixed; top:16px; left:50%; transform:translateX(-50%) translateY(-90px);
+  background:linear-gradient(135deg,#7928ca,#a855f7);
+  border-radius:10px; padding:10px 22px;
+  font-size:13px; font-weight:700;
+  z-index:600; transition:transform .4s cubic-bezier(.175,.885,.32,1.275);
+  box-shadow:0 4px 24px rgba(168,85,247,.5); white-space:nowrap;
+}
+#notif.show { transform:translateX(-50%) translateY(0); }
 
-  @keyframes flashAnim {
-    0%   { opacity: 0; }
-    20%  { opacity: 0.7; }
-    40%  { opacity: 0.2; }
-    60%  { opacity: 0.6; }
-    80%  { opacity: 0.1; }
-    100% { opacity: 0; }
-  }
+/* SCORE POP */
+.spop {
+  position:fixed; font-size:18px; font-weight:700;
+  color:#00d4ff; pointer-events:none; z-index:300;
+  animation:spopAnim .9s forwards;
+  text-shadow:0 0 10px #00d4ff;
+}
+@keyframes spopAnim { 0%{opacity:1;transform:translateY(0)} 100%{opacity:0;transform:translateY(-50px)} }
 
-  /* RIGHT PANEL */
-  #right-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    width: 180px;
-  }
+/* LASER LINE */
+.laser-line {
+  position:fixed; left:0; right:0; height:3px;
+  background:linear-gradient(90deg,transparent,#ff0080,#a855f7,#00d4ff,transparent);
+  box-shadow:0 0 12px #ff0080, 0 0 24px #a855f7;
+  pointer-events:none; z-index:300;
+  animation:laserAnim .35s forwards;
+}
+@keyframes laserAnim { 0%{opacity:1;transform:scaleX(0)} 60%{opacity:1;transform:scaleX(1)} 100%{opacity:0;transform:scaleX(1)} }
 
-  /* LASER SWORD STATUS */
-  #sword-box {
-    text-align: center;
-  }
-
-  #sword-icon {
-    font-size: 40px;
-    filter: grayscale(1) brightness(0.4);
-    transition: filter 0.5s, transform 0.3s;
-    cursor: default;
-    user-select: none;
-  }
-
-  #sword-icon.unlocked {
-    filter: none;
-    animation: swordGlow 2s infinite alternate;
-    cursor: pointer;
-  }
-
-  @keyframes swordGlow {
-    from { text-shadow: 0 0 10px #ff0080, 0 0 20px #7928ca; transform: scale(1); }
-    to   { text-shadow: 0 0 20px #00d4ff, 0 0 40px #a855f7; transform: scale(1.1); }
-  }
-
-  #sword-label {
-    font-size: 10px;
-    color: #888;
-    margin-top: 4px;
-  }
-
-  #sword-label.unlocked {
-    color: #a855f7;
-    font-weight: bold;
-  }
-
-  /* LASER KRISTALLE */
-  #crystals-display {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  #crystals-display span:first-child {
-    font-size: 24px;
-  }
-
-  #crystal-count {
-    font-size: 22px;
-    font-weight: bold;
-    color: #a855f7;
-  }
-
-  /* SHOP */
-  #shop-btn {
-    width: 100%;
-    padding: 10px;
-    background: linear-gradient(135deg, #7928ca, #a855f7);
-    border: none;
-    border-radius: 8px;
-    color: #fff;
-    font-size: 13px;
-    font-weight: bold;
-    cursor: pointer;
-    opacity: 0.3;
-    transition: opacity 0.3s, transform 0.1s, box-shadow 0.3s;
-  }
-
-  #shop-btn.active {
-    opacity: 1;
-    box-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
-  }
-
-  #shop-btn.active:hover {
-    transform: scale(1.03);
-    box-shadow: 0 0 30px rgba(168, 85, 247, 0.8);
-  }
-
-  /* POWERUP LIST */
-  #powerups-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .powerup-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    color: #aaa;
-    padding: 4px 6px;
-    border-radius: 6px;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.05);
-  }
-
-  .powerup-item.active-pu {
-    color: #00d4ff;
-    border-color: rgba(0, 212, 255, 0.3);
-    background: rgba(0, 212, 255, 0.05);
-  }
-
-  .powerup-item .pu-icon { font-size: 16px; }
-  .powerup-timer { font-size: 9px; color: #666; margin-left: auto; }
-
-  /* OVERLAYS */
-  .overlay {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 200;
-    background: rgba(0,0,10,0.85);
-    backdrop-filter: blur(8px);
-  }
-
-  .overlay-box {
-    background: linear-gradient(135deg, rgba(20,20,40,0.95), rgba(10,10,25,0.95));
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 16px;
-    padding: 32px;
-    text-align: center;
-    max-width: 420px;
-    width: 90vw;
-  }
-
-  .overlay-box h2 {
-    font-size: 26px;
-    margin-bottom: 10px;
-  }
-
-  .overlay-box p {
-    color: #aaa;
-    margin-bottom: 20px;
-    line-height: 1.5;
-  }
-
-  .overlay-btn {
-    padding: 12px 32px;
-    background: linear-gradient(135deg, #00d4ff, #a855f7);
-    border: none;
-    border-radius: 8px;
-    color: #fff;
-    font-size: 15px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: transform 0.1s, box-shadow 0.2s;
-  }
-
-  .overlay-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 20px rgba(168, 85, 247, 0.6);
-  }
-
-  /* SHOP OVERLAY */
-  #shop-overlay {
-    display: none;
-  }
-
-  .shop-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin: 16px 0;
-  }
-
-  .shop-item {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 10px;
-    padding: 14px 10px;
-    cursor: pointer;
-    transition: all 0.2s;
-    position: relative;
-  }
-
-  .shop-item:hover:not(.sold-out) {
-    border-color: #a855f7;
-    background: rgba(168, 85, 247, 0.1);
-    transform: translateY(-2px);
-  }
-
-  .shop-item.sold-out {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .shop-item .item-icon { font-size: 28px; margin-bottom: 6px; }
-  .shop-item .item-name { font-size: 12px; font-weight: bold; margin-bottom: 4px; }
-  .shop-item .item-desc { font-size: 10px; color: #888; margin-bottom: 8px; line-height: 1.4; }
-  .shop-item .item-price {
-    font-size: 11px;
-    color: #a855f7;
-    font-weight: bold;
-  }
-  .shop-item .item-price span { color: #fff; }
-  .shop-item .owned-badge {
-    position: absolute;
-    top: 6px; right: 6px;
-    background: #22c55e;
-    border-radius: 4px;
-    font-size: 9px;
-    padding: 1px 5px;
-    font-weight: bold;
-  }
-
-  /* SCORE POPUP */
-  .score-popup {
-    position: absolute;
-    font-size: 18px;
-    font-weight: bold;
-    color: #00d4ff;
-    pointer-events: none;
-    animation: popUp 1s forwards;
-    z-index: 50;
-  }
-
-  @keyframes popUp {
-    0%   { opacity: 1; transform: translateY(0); }
-    100% { opacity: 0; transform: translateY(-60px); }
-  }
-
-  /* LASER BEAM EFFECT */
-  .laser-beam {
-    position: absolute;
-    left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, #ff0080, #a855f7, #00d4ff, transparent);
-    pointer-events: none;
-    animation: laserSweep 0.3s forwards;
-    box-shadow: 0 0 10px #ff0080, 0 0 20px #a855f7;
-    z-index: 10;
-  }
-
-  @keyframes laserSweep {
-    0%   { opacity: 1; transform: scaleX(0); }
-    50%  { opacity: 1; transform: scaleX(1); }
-    100% { opacity: 0; transform: scaleX(1); }
-  }
-
-  /* NOTIFICATION */
-  #notification {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%) translateY(-100px);
-    background: linear-gradient(135deg, #7928ca, #a855f7);
-    border-radius: 10px;
-    padding: 12px 24px;
-    font-size: 14px;
-    font-weight: bold;
-    z-index: 300;
-    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    box-shadow: 0 0 30px rgba(168, 85, 247, 0.5);
-    white-space: nowrap;
-  }
-
-  #notification.show {
-    transform: translateX(-50%) translateY(0);
-  }
-
-  /* LEVEL badge */
-  .level-badge {
-    display: inline-block;
-    background: linear-gradient(135deg, #00d4ff, #7928ca);
-    border-radius: 6px;
-    padding: 2px 8px;
-    font-size: 18px;
-    font-weight: bold;
-  }
+.laser-col-line {
+  position:fixed; top:0; bottom:0; width:3px;
+  background:linear-gradient(180deg,transparent,#ff0080,#a855f7,#00d4ff,transparent);
+  box-shadow:0 0 12px #ff0080, 0 0 24px #a855f7;
+  pointer-events:none; z-index:300;
+  animation:laserColAnim .35s forwards;
+}
+@keyframes laserColAnim { 0%{opacity:1;transform:scaleY(0)} 60%{opacity:1;transform:scaleY(1)} 100%{opacity:0;transform:scaleY(1)} }
 </style>
 </head>
 <body>
-
 <div id="stars"></div>
-<div id="laser-flash"></div>
-<div id="notification">🎉 Willkommen bei Blocklaser!</div>
+<div id="flash"></div>
+<div id="notif">⚡ Blocklaser</div>
+<div id="drag-ghost"><canvas id="ghost-canvas"></canvas></div>
 
-<!-- MAIN APP -->
-<div id="app">
-
-  <!-- LEFT PANEL -->
-  <div id="left-panel">
-    <div class="panel-box">
-      <h3>Punkte</h3>
-      <div class="big-number" id="score-display">0</div>
-      <div class="score-bar-wrap">
-        <div id="score-bar"></div>
-      </div>
-      <div class="score-label" id="score-label">Ziel: 20.000 🎯</div>
+<div id="ui">
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <div class="score-box">
+      <div class="label">Punkte</div>
+      <div class="value" id="score-val">0</div>
     </div>
-
-    <div class="panel-box">
-      <h3>Level</h3>
-      <div class="big-number"><span class="level-badge" id="level-display">1</span></div>
-    </div>
-
-    <div class="panel-box">
-      <h3>Nächster Block</h3>
-      <canvas id="next-canvas" width="100" height="80"></canvas>
-    </div>
-
-    <div class="panel-box">
-      <h3>Steuerung</h3>
-      <div class="control-row"><span>Links</span><span class="key">◀</span></div>
-      <div class="control-row"><span>Rechts</span><span class="key">▶</span></div>
-      <div class="control-row"><span>Drehen</span><span class="key">▲</span></div>
-      <div class="control-row"><span>Fallen</span><span class="key">▼</span></div>
-      <div class="control-row"><span>Drop</span><span class="key">Space</span></div>
-      <div class="control-row"><span>Pause</span><span class="key">P</span></div>
+    <div id="sword-btn" title="Laserschwert">⚔️</div>
+    <div class="score-box">
+      <div class="label">Bestzeit</div>
+      <div class="value" id="best-val">0</div>
     </div>
   </div>
 
-  <!-- GAME CANVAS -->
-  <div id="game-wrap">
-    <canvas id="game-canvas" width="300" height="600"></canvas>
+  <!-- PROGRESS -->
+  <div id="progress-wrap"><div id="progress-bar"></div></div>
+
+  <!-- CRYSTALS -->
+  <div id="crystal-row">
+    <span>💎</span>
+    <span id="crystal-val">0</span>
+    <span style="color:#888;font-size:11px">Laser-Kristalle</span>
   </div>
 
-  <!-- RIGHT PANEL -->
-  <div id="right-panel">
+  <!-- GRID -->
+  <div id="grid-wrap">
+    <canvas id="grid-canvas"></canvas>
+  </div>
 
-    <div class="panel-box" id="sword-box">
-      <h3>Laserschwert</h3>
-      <div id="sword-icon">⚔️</div>
-      <div id="sword-label">Brauche 20.000 Pkt</div>
-    </div>
-
-    <div class="panel-box" id="crystals-box" style="display:none">
-      <h3>Laser-Kristalle</h3>
-      <div id="crystals-display">
-        <span>💎</span>
-        <span id="crystal-count">0</span>
-      </div>
-    </div>
-
-    <button id="shop-btn" disabled>🛒 Shop</button>
-
-    <div class="panel-box">
-      <h3>Power-Ups</h3>
-      <div id="powerups-list">
-        <div class="powerup-item" id="pu-double">
-          <span class="pu-icon">✨</span>
-          <span>Doppel-Punkte</span>
-          <span class="powerup-timer" id="pu-double-timer"></span>
-        </div>
-        <div class="powerup-item" id="pu-slow">
-          <span class="pu-icon">🐢</span>
-          <span>Zeitlupe</span>
-          <span class="powerup-timer" id="pu-slow-timer"></span>
-        </div>
-        <div class="powerup-item" id="pu-laser">
-          <span class="pu-icon">🔥</span>
-          <span>Laser-Reihe</span>
-          <span class="powerup-timer" id="pu-laser-timer"></span>
-        </div>
-        <div class="powerup-item" id="pu-rainbow">
-          <span class="pu-icon">🌈</span>
-          <span>Regenbogen</span>
-          <span class="powerup-timer" id="pu-rainbow-timer"></span>
-        </div>
-      </div>
-    </div>
-
-    <div class="panel-box">
-      <h3>Reihen</h3>
-      <div class="big-number" id="lines-display">0</div>
-    </div>
-
+  <!-- TRAY -->
+  <div id="tray">
+    <div class="tray-slot" id="slot0"></div>
+    <div class="tray-slot" id="slot1"></div>
+    <div class="tray-slot" id="slot2"></div>
   </div>
 </div>
 
-<!-- START OVERLAY -->
-<div class="overlay" id="start-overlay">
-  <div class="overlay-box">
-    <div style="font-size:60px;margin-bottom:10px">⚡</div>
-    <h2 style="background:linear-gradient(135deg,#00d4ff,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent">BLOCKLASER</h2>
-    <p>Stapele Blöcke und lösche Reihen für Punkte!<br>Erreiche <strong style="color:#a855f7">20.000 Punkte</strong> um das legendäre <strong style="color:#ff0080">Laserschwert ⚔️</strong> freizuschalten und im Shop einzukaufen!</p>
-    <button class="overlay-btn" onclick="startGame()">🚀 Spiel starten</button>
+<!-- START -->
+<div class="overlay" id="ov-start">
+  <div class="obox">
+    <div style="font-size:60px;margin-bottom:8px">⚡</div>
+    <h2 style="background:linear-gradient(135deg,#00d4ff,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:32px">BLOCKLASER</h2>
+    <p>Ziehe Blöcke ins Gitter.<br>Fülle eine Reihe oder Spalte → sie wird gelöscht!<br><br>Erreiche <strong style="color:#a855f7">20.000 Punkte</strong> um das<br><strong style="color:#ff0080">⚔️ Laserschwert</strong> freizuschalten!</p>
+    <button class="obtn" onclick="startGame()">🚀 Spielen</button>
   </div>
 </div>
 
-<!-- GAME OVER OVERLAY -->
-<div class="overlay" id="gameover-overlay" style="display:none">
-  <div class="overlay-box">
-    <div style="font-size:50px;margin-bottom:10px">💥</div>
-    <h2>Game Over</h2>
-    <p>Dein Punktestand: <strong style="color:#00d4ff;font-size:20px" id="final-score">0</strong><br>Reihen gelöscht: <strong id="final-lines">0</strong></p>
-    <button class="overlay-btn" onclick="restartGame()">🔄 Nochmal spielen</button>
+<!-- GAME OVER -->
+<div class="overlay" id="ov-over" style="display:none">
+  <div class="obox">
+    <div style="font-size:48px;margin-bottom:8px">💥</div>
+    <h2>Kein Platz mehr!</h2>
+    <p>Dein Punktestand:<br><strong style="color:#00d4ff;font-size:26px" id="final-score">0</strong></p>
+    <button class="obtn" onclick="restartGame()">🔄 Nochmal</button>
   </div>
 </div>
 
-<!-- SWORD UNLOCK OVERLAY -->
-<div class="overlay" id="sword-overlay" style="display:none">
-  <div class="overlay-box">
-    <div style="font-size:70px;margin-bottom:10px;animation:swordGlow 1s infinite alternate">⚔️</div>
-    <h2 style="background:linear-gradient(135deg,#ff0080,#a855f7,#00d4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent">LASERSCHWERT FREIGESCHALTET!</h2>
-    <p>Du hast 20.000 Punkte erreicht und das legendäre <strong style="color:#ff0080">Laserschwert</strong> freigeschaltet!<br><br>Verdiene jetzt <strong style="color:#a855f7">💎 Laser-Kristalle</strong> und kaufe Power-Ups im Shop!</p>
-    <button class="overlay-btn" onclick="closeSwordOverlay()">⚔️ Weiter spielen!</button>
+<!-- SWORD UNLOCK -->
+<div class="overlay" id="ov-sword" style="display:none">
+  <div class="obox">
+    <div style="font-size:70px;margin-bottom:8px;animation:swordPulse 1s infinite alternate">⚔️</div>
+    <h2 style="background:linear-gradient(135deg,#ff0080,#a855f7,#00d4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent">LASERSCHWERT!</h2>
+    <p>Du hast <strong style="color:#ff0080">20.000 Punkte</strong> geknackt!<br>Das legendäre Laserschwert gehört dir.<br><br>Verdiene <strong style="color:#a855f7">💎 Laser-Kristalle</strong> und kaufe Power-Ups!</p>
+    <button class="obtn" onclick="closeSword()">⚔️ Weiter!</button>
   </div>
 </div>
 
-<!-- SHOP OVERLAY -->
-<div class="overlay" id="shop-overlay">
-  <div class="overlay-box" style="max-width:500px">
-    <div style="font-size:40px">🛒</div>
+<!-- SHOP -->
+<div class="overlay" id="ov-shop" style="display:none">
+  <div class="obox">
+    <div style="font-size:36px">🛒</div>
     <h2>Laser-Shop</h2>
-    <p style="font-size:12px">Deine Kristalle: <strong style="color:#a855f7">💎 <span id="shop-crystal-display">0</span></strong></p>
+    <p style="font-size:12px;margin-bottom:0">💎 <strong style="color:#a855f7" id="shop-crystals">0</strong> Kristalle</p>
     <div class="shop-grid" id="shop-grid"></div>
-    <button class="overlay-btn" onclick="closeShop()" style="background:rgba(255,255,255,0.1);margin-top:4px">✖ Schließen</button>
+    <button class="obtn secondary" onclick="closeShop()">✖ Schließen</button>
   </div>
 </div>
 
 <script>
-// ─── STARS ────────────────────────────────────────────────────────────────────
-(function() {
-  const container = document.getElementById('stars');
-  for (let i = 0; i < 120; i++) {
-    const s = document.createElement('div');
-    s.className = 'star';
-    const size = Math.random() * 2.5 + 0.5;
-    s.style.cssText = `
-      width:${size}px; height:${size}px;
-      left:${Math.random()*100}%;
-      top:${Math.random()*100}%;
-      animation-delay:${Math.random()*3}s;
-      animation-duration:${1.5+Math.random()*2}s;
-    `;
-    container.appendChild(s);
-  }
-})();
+// ── STARS ─────────────────────────────────────────────────────────────────────
+for (let i = 0; i < 100; i++) {
+  const s = document.createElement('div');
+  s.className = 'star';
+  const sz = Math.random() * 2.5 + .5;
+  s.style.cssText = `width:${sz}px;height:${sz}px;left:${Math.random()*100}%;top:${Math.random()*100}%;animation-delay:${Math.random()*3}s;animation-duration:${1.5+Math.random()*2}s`;
+  document.getElementById('stars').appendChild(s);
+}
 
-// ─── GAME CONSTANTS ───────────────────────────────────────────────────────────
-const COLS = 10, ROWS = 20, CELL = 30;
-const canvas = document.getElementById('game-canvas');
-const ctx = canvas.getContext('2d');
-const nextCanvas = document.getElementById('next-canvas');
-const nextCtx = nextCanvas.getContext('2d');
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+const GRID = 8;
+let CELL = 44; // adjusted for screen size
 
-const PIECES = [
-  { shape: [[1,1,1,1]],                   color: '#00d4ff', name: 'I' },
-  { shape: [[1,1],[1,1]],                  color: '#fbbf24', name: 'O' },
-  { shape: [[0,1,0],[1,1,1]],              color: '#a855f7', name: 'T' },
-  { shape: [[0,1,1],[1,1,0]],              color: '#22c55e', name: 'S' },
-  { shape: [[1,1,0],[0,1,1]],              color: '#ef4444', name: 'Z' },
-  { shape: [[1,0,0],[1,1,1]],              color: '#f97316', name: 'J' },
-  { shape: [[0,0,1],[1,1,1]],              color: '#3b82f6', name: 'L' },
+function calcCell() {
+  const maxW = Math.min(window.innerWidth - 32, 480 - 24);
+  CELL = Math.floor(maxW / GRID);
+}
+calcCell();
+
+// ── PIECE TEMPLATES ───────────────────────────────────────────────────────────
+const TEMPLATES = [
+  // 1x1
+  { shape:[[1]], color:'#f97316' },
+  // 1x2
+  { shape:[[1,1]], color:'#fbbf24' },
+  // 2x1
+  { shape:[[1],[1]], color:'#fbbf24' },
+  // 1x3
+  { shape:[[1,1,1]], color:'#22c55e' },
+  // 3x1
+  { shape:[[1],[1],[1]], color:'#22c55e' },
+  // 1x4
+  { shape:[[1,1,1,1]], color:'#00d4ff' },
+  // 4x1
+  { shape:[[1],[1],[1],[1]], color:'#00d4ff' },
+  // 1x5
+  { shape:[[1,1,1,1,1]], color:'#3b82f6' },
+  // 2x2
+  { shape:[[1,1],[1,1]], color:'#ef4444' },
+  // 2x3
+  { shape:[[1,1,1],[1,1,1]], color:'#a855f7' },
+  // 3x2
+  { shape:[[1,1],[1,1],[1,1]], color:'#a855f7' },
+  // L
+  { shape:[[1,0],[1,0],[1,1]], color:'#f97316' },
+  // J
+  { shape:[[0,1],[0,1],[1,1]], color:'#3b82f6' },
+  // L flip
+  { shape:[[1,1],[1,0],[1,0]], color:'#f97316' },
+  // J flip
+  { shape:[[1,1],[0,1],[0,1]], color:'#3b82f6' },
+  // T
+  { shape:[[1,1,1],[0,1,0]], color:'#a855f7' },
+  // T down
+  { shape:[[0,1,0],[1,1,1]], color:'#a855f7' },
+  // S
+  { shape:[[0,1,1],[1,1,0]], color:'#22c55e' },
+  // Z
+  { shape:[[1,1,0],[0,1,1]], color:'#ef4444' },
+  // 3x3 corner
+  { shape:[[1,1,1],[1,0,0],[1,0,0]], color:'#ff0080' },
+  { shape:[[1,1,1],[0,0,1],[0,0,1]], color:'#ff0080' },
+  { shape:[[1,0,0],[1,0,0],[1,1,1]], color:'#ff0080' },
+  { shape:[[0,0,1],[0,0,1],[1,1,1]], color:'#ff0080' },
 ];
 
-const SCORE_TABLE = { 1: 100, 2: 300, 3: 700, 4: 1500 };
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let board, score, best, swordUnlocked, crystals;
+let trayPieces; // [{shape, color} or null]
+let powerUps = {};
+let crystalBoost = 0;
 
-// ─── STATE ────────────────────────────────────────────────────────────────────
-let board, score, lines, level, gameOver, paused;
-let currentPiece, currentX, currentY;
-let nextPiece;
-let dropTimer, dropInterval;
-let swordUnlocked = false;
-let crystals = 0;
-let animationId;
-let lastTime = 0;
-let accumulator = 0;
-
-// Power-up state
-let powerUps = {
-  doublePoints: 0,  // seconds remaining
-  slowMode: 0,
-  laserRow: false,
-  rainbow: 0,
-};
-
-// Shop items
-const SHOP_ITEMS = [
-  { id: 'double', icon: '✨', name: 'Doppel-Punkte', desc: '30 Sekunden doppelte Punkte', price: 50, type: 'powerup', maxOwn: 99 },
-  { id: 'slow',   icon: '🐢', name: 'Zeitlupe',      desc: '20 Sekunden halbe Fallgeschwindigkeit', price: 30, type: 'powerup', maxOwn: 99 },
-  { id: 'clear',  icon: '💣', name: 'Bomben-Block',  desc: 'Löscht die untersten 3 Reihen sofort', price: 80, type: 'instant', maxOwn: 99 },
-  { id: 'laser',  icon: '🔥', name: 'Laser-Strahl',  desc: 'Löscht die nächste fertige Reihe mit Lasereffekt', price: 40, type: 'powerup', maxOwn: 99 },
-  { id: 'rainbow',icon: '🌈', name: 'Regenbogen',    desc: '15 Sek. alle Blöcke werden bunt und geben +50% Punkte', price: 60, type: 'powerup', maxOwn: 99 },
-  { id: 'extra',  icon: '💎', name: 'Kristall-Boost',desc: 'Jede gelöschte Reihe gibt +5 Kristalle für 60 Sek.', price: 100, type: 'powerup', maxOwn: 99 },
-];
-
-let ownedItems = {};
-let crystalBoostTimer = 0;
-
-// ─── NOTIFICATION ─────────────────────────────────────────────────────────────
-let notifTimeout;
-function showNotif(msg) {
-  const el = document.getElementById('notification');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(notifTimeout);
-  notifTimeout = setTimeout(() => el.classList.remove('show'), 3000);
-}
-
-// ─── SCORE POPUP ──────────────────────────────────────────────────────────────
-function scorePopup(pts, row) {
-  const wrap = document.getElementById('game-wrap');
-  const el = document.createElement('div');
-  el.className = 'score-popup';
-  el.textContent = '+' + pts.toLocaleString('de-DE');
-  el.style.left = (CELL * 3) + 'px';
-  el.style.top = (row * CELL - 10) + 'px';
-  wrap.appendChild(el);
-  setTimeout(() => el.remove(), 1000);
-}
-
-// ─── LASER FLASH ──────────────────────────────────────────────────────────────
-function triggerFlash() {
-  const el = document.getElementById('laser-flash');
-  el.style.animation = 'none';
-  el.offsetHeight; // reflow
-  el.style.animation = 'flashAnim 0.8s forwards';
-}
-
-// ─── LASER BEAM ON ROW ────────────────────────────────────────────────────────
-function showLaserBeam(row) {
-  const wrap = document.getElementById('game-wrap');
-  const el = document.createElement('div');
-  el.className = 'laser-beam';
-  el.style.top = (row * CELL + CELL/2 - 1) + 'px';
-  wrap.appendChild(el);
-  setTimeout(() => el.remove(), 350);
-}
-
-// ─── PIECE HELPERS ────────────────────────────────────────────────────────────
-function randomPiece() {
-  const p = PIECES[Math.floor(Math.random() * PIECES.length)];
-  return { shape: p.shape.map(r => [...r]), color: p.color, name: p.name };
-}
-
-function rotate(shape) {
-  const rows = shape.length, cols = shape[0].length;
-  const rotated = Array.from({length: cols}, () => Array(rows).fill(0));
-  for (let r = 0; r < rows; r++)
-    for (let c = 0; c < cols; c++)
-      rotated[c][rows - 1 - r] = shape[r][c];
-  return rotated;
-}
-
-function validPosition(shape, x, y) {
-  for (let r = 0; r < shape.length; r++)
-    for (let c = 0; c < shape[r].length; c++)
-      if (shape[r][c]) {
-        const nx = x + c, ny = y + r;
-        if (nx < 0 || nx >= COLS || ny >= ROWS) return false;
-        if (ny >= 0 && board[ny][nx]) return false;
-      }
-  return true;
-}
-
-function placePiece() {
-  const color = powerUps.rainbow > 0 ? rainbowColor() : currentPiece.color;
-  for (let r = 0; r < currentPiece.shape.length; r++)
-    for (let c = 0; c < currentPiece.shape[r].length; c++)
-      if (currentPiece.shape[r][c]) {
-        const ny = currentY + r;
-        if (ny < 0) { triggerGameOver(); return; }
-        board[ny][currentX + c] = color;
-      }
-
-  clearLines();
-  spawnPiece();
-}
-
-function rainbowColor() {
-  const colors = ['#ff0080','#ff4400','#ffcc00','#00ff88','#00d4ff','#a855f7'];
-  return colors[Math.floor(Math.random() * colors.length)];
-}
-
-// ─── LINE CLEARING ────────────────────────────────────────────────────────────
-function clearLines() {
-  let cleared = 0;
-  const rowsCleared = [];
-
-  for (let r = ROWS - 1; r >= 0; r--) {
-    if (board[r].every(c => c !== 0)) {
-      rowsCleared.push(r);
-      cleared++;
+// DRAG
+let dragging = null;
+/*  dragging = {
+      idx: tray index,
+      piece: {shape, color},
+      offsetX, offsetY,  // mouse relative to piece top-left
+      ghostCol, ghostRow // grid cell under cursor (-1 if invalid)
     }
-  }
+*/
 
-  if (cleared === 0) return;
+// ── CANVAS ────────────────────────────────────────────────────────────────────
+const gc = document.getElementById('grid-canvas');
+const gx = gc.getContext('2d');
 
-  // Show laser beams on cleared rows
-  if (powerUps.laserRow || swordUnlocked) {
-    rowsCleared.forEach(r => showLaserBeam(r));
-  }
-
-  // Remove cleared rows
-  rowsCleared.forEach(r => {
-    board.splice(r, 1);
-    board.unshift(Array(COLS).fill(0));
-  });
-
-  // Calculate points
-  let pts = (SCORE_TABLE[cleared] || 1500) * level;
-  if (powerUps.doublePoints > 0) pts *= 2;
-  if (powerUps.rainbow > 0) pts = Math.floor(pts * 1.5);
-
-  scorePopup(pts, rowsCleared[rowsCleared.length - 1]);
-  score += pts;
-  lines += cleared;
-
-  // Crystal gain
-  if (swordUnlocked) {
-    let crystalGain = cleared * 2;
-    if (crystalBoostTimer > 0) crystalGain += cleared * 5;
-    crystals += crystalGain;
-    updateCrystalDisplay();
-  }
-
-  updateLevel();
-  checkSwordUnlock();
-  updateUI();
+function resizeCanvas() {
+  calcCell();
+  gc.width  = CELL * GRID;
+  gc.height = CELL * GRID;
+  drawGrid();
+  renderTray();
 }
 
-function updateLevel() {
-  const newLevel = Math.floor(lines / 10) + 1;
-  if (newLevel !== level) {
-    level = newLevel;
-    showNotif(`🆙 Level ${level}!`);
-  }
-  dropInterval = Math.max(100, 800 - (level - 1) * 60);
-  if (powerUps.slowMode > 0) dropInterval = Math.min(dropInterval * 2, 1200);
-}
+window.addEventListener('resize', resizeCanvas);
 
-// ─── SWORD UNLOCK ─────────────────────────────────────────────────────────────
-function checkSwordUnlock() {
-  if (!swordUnlocked && score >= 20000) {
-    swordUnlocked = true;
-    triggerFlash();
-    setTimeout(() => {
-      document.getElementById('sword-overlay').style.display = 'flex';
-    }, 800);
-
-    document.getElementById('sword-icon').classList.add('unlocked');
-    document.getElementById('sword-label').textContent = 'FREIGESCHALTET! ⚔️';
-    document.getElementById('sword-label').classList.add('unlocked');
-    document.getElementById('crystals-box').style.display = 'block';
-    document.getElementById('shop-btn').disabled = false;
-    document.getElementById('shop-btn').classList.add('active');
-  }
-}
-
-function closeSwordOverlay() {
-  document.getElementById('sword-overlay').style.display = 'none';
-  paused = false;
-}
-
-// ─── SPAWN ────────────────────────────────────────────────────────────────────
-function spawnPiece() {
-  currentPiece = nextPiece || randomPiece();
-  nextPiece = randomPiece();
-  currentX = Math.floor(COLS / 2) - Math.floor(currentPiece.shape[0].length / 2);
-  currentY = 0;
-  drawNextPiece();
-
-  if (!validPosition(currentPiece.shape, currentX, currentY)) {
-    triggerGameOver();
-  }
-}
-
-// ─── DRAW ─────────────────────────────────────────────────────────────────────
-function drawCell(context, x, y, color, alpha = 1) {
-  const px = x * CELL, py = y * CELL;
-  context.globalAlpha = alpha;
-
-  // Gradient fill
-  const grad = context.createLinearGradient(px, py, px + CELL, py + CELL);
-  grad.addColorStop(0, lighten(color, 40));
-  grad.addColorStop(1, darken(color, 30));
-  context.fillStyle = grad;
-  context.fillRect(px + 1, py + 1, CELL - 2, CELL - 2);
-
-  // Highlight
-  context.fillStyle = 'rgba(255,255,255,0.3)';
-  context.fillRect(px + 2, py + 2, CELL - 4, 4);
-  context.fillRect(px + 2, py + 2, 4, CELL - 4);
-
-  // Border
-  context.strokeStyle = darken(color, 50);
-  context.lineWidth = 1;
-  context.strokeRect(px + 0.5, py + 0.5, CELL - 1, CELL - 1);
-
-  context.globalAlpha = 1;
-}
-
-function lighten(hex, amt) {
-  return adjustColor(hex, amt);
-}
-
-function darken(hex, amt) {
-  return adjustColor(hex, -amt);
-}
-
-function adjustColor(hex, amt) {
-  let r = parseInt(hex.slice(1,3), 16);
-  let g = parseInt(hex.slice(3,5), 16);
-  let b = parseInt(hex.slice(5,7), 16);
-  r = Math.max(0, Math.min(255, r + amt));
-  g = Math.max(0, Math.min(255, g + amt));
-  b = Math.max(0, Math.min(255, b + amt));
+// ── COLORS ────────────────────────────────────────────────────────────────────
+function lighten(hex, a) { return adjustHex(hex, a); }
+function darken(hex, a)  { return adjustHex(hex, -a); }
+function adjustHex(hex, amt) {
+  let r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  r=Math.max(0,Math.min(255,r+amt)); g=Math.max(0,Math.min(255,g+amt)); b=Math.max(0,Math.min(255,b+amt));
   return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
 }
 
-function getGhostY() {
-  let gy = currentY;
-  while (validPosition(currentPiece.shape, currentX, gy + 1)) gy++;
-  return gy;
-}
-
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Grid background
-  ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+function drawCell(ctx, cx, cy, color, alpha=1, size=CELL) {
+  const px=cx*size, py=cy*size;
+  ctx.globalAlpha = alpha;
+  const g = ctx.createLinearGradient(px,py,px+size,py+size);
+  g.addColorStop(0, lighten(color,40));
+  g.addColorStop(1, darken(color,25));
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.roundRect(px+1, py+1, size-2, size-2, 4);
+  ctx.fill();
+  // shine
+  ctx.fillStyle = 'rgba(255,255,255,.28)';
+  ctx.beginPath();
+  ctx.roundRect(px+3, py+3, size-6, Math.floor(size*.3), 3);
+  ctx.fill();
+  // border
+  ctx.strokeStyle = darken(color,40);
   ctx.lineWidth = 1;
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      ctx.strokeRect(c * CELL, r * CELL, CELL, CELL);
+  ctx.beginPath();
+  ctx.roundRect(px+.5, py+.5, size-1, size-1, 4);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+// ── DRAW GRID ─────────────────────────────────────────────────────────────────
+function drawGrid() {
+  gx.clearRect(0, 0, gc.width, gc.height);
+
+  // background cells
+  for (let r=0; r<GRID; r++) for (let c=0; c<GRID; c++) {
+    gx.fillStyle = (r+c)%2===0 ? 'rgba(255,255,255,.03)' : 'rgba(255,255,255,.015)';
+    gx.beginPath();
+    gx.roundRect(c*CELL+1, r*CELL+1, CELL-2, CELL-2, 3);
+    gx.fill();
+  }
+
+  // highlight drop zone
+  if (dragging && dragging.ghostRow !== -1) {
+    const {piece, ghostCol, ghostRow} = dragging;
+    const canPlace = canDrop(piece.shape, ghostCol, ghostRow);
+    const hi = canPlace ? 'rgba(0,212,255,.18)' : 'rgba(255,0,80,.18)';
+    for (let r=0; r<piece.shape.length; r++) for (let c=0; c<piece.shape[r].length; c++) {
+      if (!piece.shape[r][c]) continue;
+      const gc2=ghostCol+c, gr=ghostRow+r;
+      if (gc2<0||gc2>=GRID||gr<0||gr>=GRID) continue;
+      gx.fillStyle = hi;
+      gx.beginPath();
+      gx.roundRect(gc2*CELL+1, gr*CELL+1, CELL-2, CELL-2, 3);
+      gx.fill();
     }
   }
 
-  // Board
-  for (let r = 0; r < ROWS; r++)
-    for (let c = 0; c < COLS; c++)
-      if (board[r][c]) drawCell(ctx, c, r, board[r][c]);
-
-  // Ghost
-  if (currentPiece && !gameOver) {
-    const ghostY = getGhostY();
-    if (ghostY !== currentY) {
-      for (let r = 0; r < currentPiece.shape.length; r++)
-        for (let c = 0; c < currentPiece.shape[r].length; c++)
-          if (currentPiece.shape[r][c])
-            drawCell(ctx, currentX + c, ghostY + r, currentPiece.color, 0.15);
+  // board cells
+  for (let r=0; r<GRID; r++) for (let c=0; c<GRID; c++) {
+    if (board[r][c]) {
+      let col = board[r][c];
+      if (powerUps.rainbow > 0) col = rainbowCol();
+      drawCell(gx, c, r, col);
     }
   }
-
-  // Current piece
-  if (currentPiece && !gameOver) {
-    const color = powerUps.rainbow > 0 ? rainbowColor() : currentPiece.color;
-    for (let r = 0; r < currentPiece.shape.length; r++)
-      for (let c = 0; c < currentPiece.shape[r].length; c++)
-        if (currentPiece.shape[r][c])
-          drawCell(ctx, currentX + c, currentY + r, color);
-  }
-
-  // Pause overlay
-  if (paused) {
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 28px Segoe UI';
-    ctx.textAlign = 'center';
-    ctx.fillText('⏸ PAUSE', canvas.width / 2, canvas.height / 2);
-    ctx.textAlign = 'left';
-  }
 }
 
-function drawNextPiece() {
-  nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
-  if (!nextPiece) return;
-  const shape = nextPiece.shape;
-  const offX = Math.floor((5 - shape[0].length) / 2);
-  const offY = Math.floor((3 - shape.length) / 2);
-  const small = 20;
-  for (let r = 0; r < shape.length; r++)
-    for (let c = 0; c < shape[r].length; c++)
-      if (shape[r][c]) {
-        const px = (offX + c) * small + 5, py = (offY + r) * small + 10;
-        const grad = nextCtx.createLinearGradient(px, py, px + small, py + small);
-        grad.addColorStop(0, lighten(nextPiece.color, 40));
-        grad.addColorStop(1, darken(nextPiece.color, 20));
-        nextCtx.fillStyle = grad;
-        nextCtx.fillRect(px + 1, py + 1, small - 2, small - 2);
-        nextCtx.fillStyle = 'rgba(255,255,255,0.3)';
-        nextCtx.fillRect(px + 2, py + 2, small - 4, 3);
-        nextCtx.strokeStyle = darken(nextPiece.color, 40);
-        nextCtx.lineWidth = 1;
-        nextCtx.strokeRect(px + 0.5, py + 0.5, small - 1, small - 1);
-      }
+function rainbowCol() {
+  const c=['#ff0080','#ff4400','#fbbf24','#22c55e','#00d4ff','#a855f7'];
+  return c[Math.floor(Date.now()/200)%c.length];
 }
 
-// ─── UI UPDATE ────────────────────────────────────────────────────────────────
-function updateUI() {
-  document.getElementById('score-display').textContent = score.toLocaleString('de-DE');
-  document.getElementById('lines-display').textContent = lines;
-  document.getElementById('level-display').textContent = level;
+// ── TRAY ──────────────────────────────────────────────────────────────────────
+const PIECE_CELL = 28;
+const PIECE_PAD  = 6;
 
-  const pct = Math.min(score / 20000 * 100, 100);
-  document.getElementById('score-bar').style.width = pct + '%';
+function renderTray() {
+  for (let i=0; i<3; i++) {
+    const slot = document.getElementById(`slot${i}`);
+    slot.innerHTML = '';
+    const piece = trayPieces[i];
+    if (!piece) { slot.classList.add('used'); continue; }
+    slot.classList.remove('used');
 
-  if (score >= 20000) {
-    document.getElementById('score-label').textContent = '⚔️ Laserschwert aktiv!';
-    document.getElementById('score-label').style.color = '#a855f7';
+    const rows = piece.shape.length, cols = piece.shape[0].length;
+    const cw = cols*PIECE_CELL + PIECE_PAD*2;
+    const ch = rows*PIECE_CELL + PIECE_PAD*2;
+    const pc = document.createElement('canvas');
+    pc.className = 'piece-canvas';
+    pc.width = cw; pc.height = ch;
+    pc.dataset.idx = i;
+    const px = pc.getContext('2d');
+    drawPieceOnCtx(px, piece, PIECE_CELL, PIECE_PAD);
+    slot.appendChild(pc);
+
+    // DRAG events
+    pc.addEventListener('mousedown',  onPieceMouseDown);
+    pc.addEventListener('touchstart', onPieceTouchStart, {passive:false});
   }
 }
 
-function updateCrystalDisplay() {
-  document.getElementById('crystal-count').textContent = crystals;
-  document.getElementById('shop-crystal-display').textContent = crystals;
+function drawPieceOnCtx(ctx, piece, cell, pad) {
+  ctx.clearRect(0,0,ctx.canvas.width,ctx.canvas.height);
+  for (let r=0; r<piece.shape.length; r++) for (let c=0; c<piece.shape[r].length; c++) {
+    if (piece.shape[r][c]) drawCell(ctx, c, r, piece.color, 1, cell);
+  }
 }
 
-function updatePowerUpUI() {
-  const items = [
-    { id: 'pu-double', timer: 'pu-double-timer', val: powerUps.doublePoints },
-    { id: 'pu-slow',   timer: 'pu-slow-timer',   val: powerUps.slowMode },
-    { id: 'pu-laser',  timer: 'pu-laser-timer',  val: powerUps.laserRow ? 1 : 0 },
-    { id: 'pu-rainbow',timer: 'pu-rainbow-timer', val: powerUps.rainbow },
-  ];
-  items.forEach(item => {
-    const el = document.getElementById(item.id);
-    const timer = document.getElementById(item.timer);
-    if (item.val > 0) {
-      el.classList.add('active-pu');
-      timer.textContent = typeof item.val === 'number' && item.val > 1 ? Math.ceil(item.val) + 's' : '✓';
-    } else {
-      el.classList.remove('active-pu');
-      timer.textContent = '';
-    }
+// ── DRAG: MOUSE ───────────────────────────────────────────────────────────────
+function onPieceMouseDown(e) {
+  e.preventDefault();
+  const idx = +e.currentTarget.dataset.idx;
+  startDrag(idx, e.clientX, e.clientY);
+  window.addEventListener('mousemove', onMouseMove);
+  window.addEventListener('mouseup',   onMouseUp);
+}
+function onMouseMove(e) { moveDrag(e.clientX, e.clientY); }
+function onMouseUp(e)   { endDrag(e.clientX, e.clientY); window.removeEventListener('mousemove',onMouseMove); window.removeEventListener('mouseup',onMouseUp); }
+
+// DRAG: TOUCH
+function onPieceTouchStart(e) {
+  e.preventDefault();
+  const t = e.touches[0];
+  const idx = +e.currentTarget.dataset.idx;
+  startDrag(idx, t.clientX, t.clientY);
+  window.addEventListener('touchmove', onTouchMove, {passive:false});
+  window.addEventListener('touchend',  onTouchEnd);
+}
+function onTouchMove(e) { e.preventDefault(); const t=e.touches[0]; moveDrag(t.clientX, t.clientY); }
+function onTouchEnd(e)  { const t=e.changedTouches[0]; endDrag(t.clientX,t.clientY); window.removeEventListener('touchmove',onTouchMove); window.removeEventListener('touchend',onTouchEnd); }
+
+// ── DRAG LOGIC ────────────────────────────────────────────────────────────────
+function startDrag(idx, cx, cy) {
+  const piece = trayPieces[idx];
+  if (!piece) return;
+
+  const ghost = document.getElementById('drag-ghost');
+  const ghostC = document.getElementById('ghost-canvas');
+  const rows = piece.shape.length, cols = piece.shape[0].length;
+  const pad = 4;
+  ghostC.width  = cols * CELL + pad*2;
+  ghostC.height = rows * CELL + pad*2;
+  const gx2 = ghostC.getContext('2d');
+  gx2.clearRect(0,0,ghostC.width,ghostC.height);
+  for (let r=0; r<rows; r++) for (let c=0; c<cols; c++) {
+    if (piece.shape[r][c]) drawCell(gx2, c, r, piece.color, .85, CELL);
+  }
+
+  // center ghost on cursor
+  const offX = ghostC.width/2;
+  const offY = ghostC.height/2;
+
+  ghost.style.display = 'block';
+  ghost.style.left = (cx - offX) + 'px';
+  ghost.style.top  = (cy - offY) + 'px';
+
+  dragging = { idx, piece, offX, offY, ghostCol:-1, ghostRow:-1 };
+  updateGhostPos(cx, cy);
+  drawGrid();
+}
+
+function moveDrag(cx, cy) {
+  if (!dragging) return;
+  const ghost = document.getElementById('drag-ghost');
+  ghost.style.left = (cx - dragging.offX) + 'px';
+  ghost.style.top  = (cy - dragging.offY) + 'px';
+  updateGhostPos(cx, cy);
+  drawGrid();
+}
+
+function updateGhostPos(cx, cy) {
+  if (!dragging) return;
+  const rect = gc.getBoundingClientRect();
+  const piece = dragging.piece;
+  // map cursor to grid cell
+  const gridX = cx - rect.left;
+  const gridY = cy - rect.top;
+  const col = Math.floor(gridX / CELL) - Math.floor(piece.shape[0].length / 2);
+  const row = Math.floor(gridY / CELL) - Math.floor(piece.shape.length / 2);
+  dragging.ghostCol = col;
+  dragging.ghostRow = row;
+}
+
+function endDrag(cx, cy) {
+  if (!dragging) return;
+  document.getElementById('drag-ghost').style.display = 'none';
+  updateGhostPos(cx, cy);
+
+  const {idx, piece, ghostCol, ghostRow} = dragging;
+  dragging = null;
+
+  if (ghostRow !== -1 && canDrop(piece.shape, ghostCol, ghostRow)) {
+    placePiece(idx, piece, ghostCol, ghostRow);
+  }
+
+  drawGrid();
+}
+
+// ── GAME LOGIC ────────────────────────────────────────────────────────────────
+function canDrop(shape, col, row) {
+  for (let r=0; r<shape.length; r++) for (let c=0; c<shape[r].length; c++) {
+    if (!shape[r][c]) continue;
+    const gc2=col+c, gr=row+r;
+    if (gc2<0||gc2>=GRID||gr<0||gr>=GRID) return false;
+    if (board[gr][gc2]) return false;
+  }
+  return true;
+}
+
+function placePiece(idx, piece, col, row) {
+  // stamp onto board
+  for (let r=0; r<piece.shape.length; r++) for (let c=0; c<piece.shape[r].length; c++) {
+    if (piece.shape[r][c]) board[row+r][col+c] = piece.color;
+  }
+  trayPieces[idx] = null;
+
+  // base points: number of cells placed
+  let cells = 0;
+  for (let r=0;r<piece.shape.length;r++) for (let c=0;c<piece.shape[r].length;c++) if(piece.shape[r][c]) cells++;
+  let pts = cells * 10;
+  if (powerUps.double > 0) pts *= 2;
+  score += pts;
+
+  // check lines
+  clearLines();
+
+  // refresh tray if all used
+  if (trayPieces.every(p => p === null)) {
+    spawnTray();
+  }
+
+  updateUI();
+  checkSword();
+  renderTray();
+  checkGameOver();
+}
+
+function clearLines() {
+  const rowsToClear = [];
+  const colsToClear = [];
+
+  for (let r=0; r<GRID; r++) {
+    if (board[r].every(c => c)) rowsToClear.push(r);
+  }
+  for (let c=0; c<GRID; c++) {
+    if (board.every(r => r[c])) colsToClear.push(c);
+  }
+
+  const total = rowsToClear.length + colsToClear.length;
+  if (total === 0) return;
+
+  // Laser effects
+  const rect = gc.getBoundingClientRect();
+  rowsToClear.forEach(r => {
+    const el = document.createElement('div');
+    el.className = 'laser-line';
+    el.style.top = (rect.top + r*CELL + CELL/2) + 'px';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 400);
+  });
+  colsToClear.forEach(c => {
+    const el = document.createElement('div');
+    el.className = 'laser-col-line';
+    el.style.left = (rect.left + c*CELL + CELL/2) + 'px';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 400);
+  });
+
+  // Clear cells
+  rowsToClear.forEach(r => { for(let c=0;c<GRID;c++) board[r][c]=0; });
+  colsToClear.forEach(c => { for(let r=0;r<GRID;r++) board[r][c]=0; });
+
+  // Score
+  const combo = rowsToClear.length + colsToClear.length;
+  let pts = combo * GRID * 30;
+  if (combo > 1) pts = Math.floor(pts * 1.5); // combo bonus
+  if (powerUps.double > 0) pts *= 2;
+  if (powerUps.rainbow > 0) pts = Math.floor(pts * 1.3);
+
+  score += pts;
+  if (score > best) { best = score; localStorage.setItem('bl_best', best); }
+
+  // Score popup
+  const pop = document.createElement('div');
+  pop.className = 'spop';
+  pop.textContent = '+' + pts.toLocaleString('de-DE');
+  pop.style.left = (rect.left + gc.width/2 - 40) + 'px';
+  pop.style.top  = (rect.top + gc.height/2) + 'px';
+  document.body.appendChild(pop);
+  setTimeout(() => pop.remove(), 1000);
+
+  // Crystals
+  if (swordUnlocked) {
+    let c = combo * 3;
+    if (crystalBoost > 0) c += combo * 5;
+    crystals += c;
+  }
+}
+
+function spawnTray() {
+  trayPieces = [0,1,2].map(() => {
+    const t = TEMPLATES[Math.floor(Math.random()*TEMPLATES.length)];
+    return { shape: t.shape.map(r=>[...r]), color: t.color };
   });
 }
 
-// ─── GAME LOOP ────────────────────────────────────────────────────────────────
-function gameLoop(timestamp) {
-  if (!paused && !gameOver) {
-    const delta = Math.min(timestamp - lastTime, 100) / 1000;
-    lastTime = timestamp;
+function checkGameOver() {
+  // Check if any remaining tray piece can be placed anywhere
+  const remaining = trayPieces.filter(Boolean);
+  if (remaining.length === 0) return; // tray will refresh
 
-    accumulator += delta * 1000;
-    const di = powerUps.slowMode > 0 ? Math.min(dropInterval * 2, 1200) : dropInterval;
-
-    if (accumulator >= di) {
-      accumulator = 0;
-      if (!moveDown()) {
-        placePiece();
+  for (const piece of remaining) {
+    for (let r=0; r<=GRID-piece.shape.length; r++) {
+      for (let c=0; c<=GRID-piece.shape[0].length; c++) {
+        if (canDrop(piece.shape, c, r)) return; // at least one valid move
       }
     }
-
-    // Tick power-ups
-    if (powerUps.doublePoints > 0) { powerUps.doublePoints -= delta; if (powerUps.doublePoints < 0) powerUps.doublePoints = 0; }
-    if (powerUps.slowMode > 0)     { powerUps.slowMode -= delta; if (powerUps.slowMode < 0) powerUps.slowMode = 0; }
-    if (powerUps.rainbow > 0)      { powerUps.rainbow -= delta; if (powerUps.rainbow < 0) powerUps.rainbow = 0; }
-    if (crystalBoostTimer > 0)     { crystalBoostTimer -= delta; }
-    updatePowerUpUI();
-  } else {
-    lastTime = timestamp;
   }
 
-  draw();
-  animationId = requestAnimationFrame(gameLoop);
-}
-
-// ─── MOVEMENT ─────────────────────────────────────────────────────────────────
-function moveDown() {
-  if (validPosition(currentPiece.shape, currentX, currentY + 1)) {
-    currentY++;
-    return true;
-  }
-  return false;
-}
-
-function moveLeft() {
-  if (validPosition(currentPiece.shape, currentX - 1, currentY)) currentX--;
-}
-
-function moveRight() {
-  if (validPosition(currentPiece.shape, currentX + 1, currentY)) currentX++;
-}
-
-function rotatePiece() {
-  const rotated = rotate(currentPiece.shape);
-  if (validPosition(rotated, currentX, currentY)) {
-    currentPiece.shape = rotated;
-  } else if (validPosition(rotated, currentX - 1, currentY)) {
-    currentPiece.shape = rotated; currentX--;
-  } else if (validPosition(rotated, currentX + 1, currentY)) {
-    currentPiece.shape = rotated; currentX++;
-  }
-}
-
-function hardDrop() {
-  let dropped = 0;
-  while (validPosition(currentPiece.shape, currentX, currentY + 1)) {
-    currentY++; dropped++;
-  }
-  score += dropped * 2;
-  updateUI();
-  placePiece();
-}
-
-// ─── GAME OVER ────────────────────────────────────────────────────────────────
-function triggerGameOver() {
-  gameOver = true;
-  document.getElementById('final-score').textContent = score.toLocaleString('de-DE');
-  document.getElementById('final-lines').textContent = lines;
+  // No moves possible
   setTimeout(() => {
-    document.getElementById('gameover-overlay').style.display = 'flex';
-  }, 500);
+    document.getElementById('final-score').textContent = score.toLocaleString('de-DE');
+    document.getElementById('ov-over').style.display = 'flex';
+  }, 300);
 }
 
-// ─── INIT & RESTART ───────────────────────────────────────────────────────────
-function initBoard() {
-  board = Array.from({length: ROWS}, () => Array(COLS).fill(0));
+// ── SWORD ──────────────────────────────────────────────────────────────────────
+function checkSword() {
+  if (!swordUnlocked && score >= 20000) {
+    swordUnlocked = true;
+    triggerFlash();
+    setTimeout(() => { document.getElementById('ov-sword').style.display='flex'; }, 700);
+    document.getElementById('sword-btn').classList.add('unlocked');
+    document.getElementById('crystal-row').classList.add('visible');
+  }
 }
 
-function startGame() {
-  document.getElementById('start-overlay').style.display = 'none';
-  initBoard();
-  score = 0; lines = 0; level = 1; gameOver = false; paused = false;
-  dropInterval = 800;
-  accumulator = 0;
-  powerUps = { doublePoints: 0, slowMode: 0, laserRow: false, rainbow: 0 };
-  crystalBoostTimer = 0;
-  nextPiece = randomPiece();
-  spawnPiece();
-  updateUI();
-  lastTime = performance.now();
-  animationId = requestAnimationFrame(gameLoop);
+function closeSword() {
+  document.getElementById('ov-sword').style.display='none';
 }
 
-function restartGame() {
-  document.getElementById('gameover-overlay').style.display = 'none';
-  swordUnlocked = false;
-  crystals = 0;
-  document.getElementById('sword-icon').classList.remove('unlocked');
-  document.getElementById('sword-label').textContent = 'Brauche 20.000 Pkt';
-  document.getElementById('sword-label').classList.remove('unlocked');
-  document.getElementById('crystals-box').style.display = 'none';
-  document.getElementById('shop-btn').disabled = true;
-  document.getElementById('shop-btn').classList.remove('active');
-  document.getElementById('score-label').textContent = 'Ziel: 20.000 🎯';
-  document.getElementById('score-label').style.color = '';
-  cancelAnimationFrame(animationId);
-  startGame();
+function triggerFlash() {
+  const el = document.getElementById('flash');
+  el.style.animation='none'; el.offsetHeight;
+  el.style.animation='flashAnim .8s forwards';
 }
 
-// ─── SHOP ─────────────────────────────────────────────────────────────────────
-document.getElementById('shop-btn').addEventListener('click', () => {
-  if (!swordUnlocked) return;
-  openShop();
+// ── UI ─────────────────────────────────────────────────────────────────────────
+function updateUI() {
+  document.getElementById('score-val').textContent = score.toLocaleString('de-DE');
+  document.getElementById('best-val').textContent  = best.toLocaleString('de-DE');
+  document.getElementById('crystal-val').textContent = crystals;
+  const pct = Math.min(score/20000*100, 100);
+  document.getElementById('progress-bar').style.width = pct + '%';
+}
+
+let notifTimer;
+function showNotif(msg) {
+  const el = document.getElementById('notif');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(notifTimer);
+  notifTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ── SHOP ───────────────────────────────────────────────────────────────────────
+const SHOP_ITEMS = [
+  { id:'double',  icon:'✨', name:'Doppel-Punkte',   desc:'60 Sek. doppelte Punkte',               price:40 },
+  { id:'bomb',    icon:'💣', name:'Bomben-Reihe',     desc:'Löscht sofort 2 zufällige volle Reihen', price:60 },
+  { id:'rainbow', icon:'🌈', name:'Regenbogen',       desc:'30 Sek. +30% Punkte & bunte Blöcke',    price:50 },
+  { id:'crystal', icon:'💎', name:'Kristall-Boost',   desc:'90 Sek. +5 Kristalle pro Löschen',      price:80 },
+  { id:'clear',   icon:'🔥', name:'Board leeren',     desc:'Löscht alle gefüllten Reihen & Spalten', price:100 },
+  { id:'hint',    icon:'💡', name:'Bester Zug',       desc:'Markiert den besten Platz für 1 Block',  price:30 },
+];
+
+document.getElementById('sword-btn').addEventListener('click', () => {
+  if (swordUnlocked) openShop();
 });
 
 function openShop() {
-  buildShopGrid();
-  document.getElementById('shop-overlay').style.display = 'flex';
-  paused = true;
+  buildShop();
+  document.getElementById('ov-shop').style.display='flex';
 }
+function closeShop() { document.getElementById('ov-shop').style.display='none'; }
 
-function closeShop() {
-  document.getElementById('shop-overlay').style.display = 'none';
-  paused = false;
-}
-
-function buildShopGrid() {
+function buildShop() {
+  document.getElementById('shop-crystals').textContent = crystals;
   const grid = document.getElementById('shop-grid');
   grid.innerHTML = '';
   SHOP_ITEMS.forEach(item => {
-    const div = document.createElement('div');
-    div.className = 'shop-item';
-    const cantAfford = crystals < item.price;
-    if (cantAfford) div.classList.add('sold-out');
-
-    div.innerHTML = `
-      <div class="item-icon">${item.icon}</div>
-      <div class="item-name">${item.name}</div>
-      <div class="item-desc">${item.desc}</div>
-      <div class="item-price">💎 <span>${item.price}</span> Kristalle</div>
-    `;
-
-    if (!cantAfford) {
-      div.addEventListener('click', () => buyItem(item));
-    }
-    grid.appendChild(div);
+    const d = document.createElement('div');
+    d.className = 'sitem' + (crystals < item.price ? ' cant' : '');
+    d.innerHTML = `<div class="si">${item.icon}</div><div class="sn">${item.name}</div><div class="sd">${item.desc}</div><div class="sp">💎 ${item.price}</div>`;
+    if (crystals >= item.price) d.addEventListener('click', () => buyItem(item));
+    grid.appendChild(d);
   });
-  updateCrystalDisplay();
 }
 
 function buyItem(item) {
   if (crystals < item.price) return;
   crystals -= item.price;
-  updateCrystalDisplay();
 
   switch(item.id) {
     case 'double':
-      powerUps.doublePoints += 30;
-      showNotif('✨ Doppel-Punkte für 30 Sekunden!');
+      powerUps.double = (powerUps.double||0) + 60;
+      showNotif('✨ Doppel-Punkte für 60 Sek!');
+      startPowerUpTimer('double');
       break;
-    case 'slow':
-      powerUps.slowMode += 20;
-      showNotif('🐢 Zeitlupe für 20 Sekunden!');
-      break;
-    case 'clear':
-      // Remove bottom 3 rows
-      for (let i = 0; i < 3; i++) {
-        board.pop();
-        board.unshift(Array(COLS).fill(0));
+    case 'bomb':
+      // Clear 2 random completed-ish rows (or just bottom 2 with cells)
+      let cleared = 0;
+      for (let r=GRID-1; r>=0 && cleared<2; r--) {
+        if (board[r].some(c=>c)) { board[r]=Array(GRID).fill(0); cleared++; }
       }
-      showNotif('💣 3 Reihen gelöscht!');
-      break;
-    case 'laser':
-      powerUps.laserRow = true;
-      showNotif('🔥 Laser-Reihe aktiviert!');
+      showNotif('💣 2 Reihen gesprengt!');
+      drawGrid();
       break;
     case 'rainbow':
-      powerUps.rainbow += 15;
-      showNotif('🌈 Regenbogen-Modus für 15 Sekunden!');
+      powerUps.rainbow = (powerUps.rainbow||0) + 30;
+      showNotif('🌈 Regenbogen-Modus!');
+      startPowerUpTimer('rainbow');
       break;
-    case 'extra':
-      crystalBoostTimer += 60;
-      showNotif('💎 Kristall-Boost für 60 Sekunden!');
+    case 'crystal':
+      crystalBoost += 90;
+      showNotif('💎 Kristall-Boost aktiv!');
+      break;
+    case 'clear':
+      // clear all full rows & cols
+      for (let r=0;r<GRID;r++) if(board[r].every(c=>c)) board[r]=Array(GRID).fill(0);
+      for (let c=0;c<GRID;c++) if(board.every(r=>r[c])) for(let r=0;r<GRID;r++) board[r][c]=0;
+      showNotif('🔥 Board geklärt!');
+      drawGrid();
+      break;
+    case 'hint':
+      showHint();
+      showNotif('💡 Bester Platz markiert!');
       break;
   }
-
-  buildShopGrid();
+  updateUI();
+  buildShop();
 }
 
-// ─── KEYBOARD ────────────────────────────────────────────────────────────────
-document.addEventListener('keydown', e => {
-  if (gameOver) return;
-  if (document.getElementById('shop-overlay').style.display === 'flex') {
-    if (e.key === 'Escape') closeShop();
-    return;
+function showHint() {
+  // Find best placement for first available piece
+  const piece = trayPieces.find(Boolean);
+  if (!piece) return;
+  let bestScore = -1, bCol=0, bRow=0;
+  for (let r=0; r<=GRID-piece.shape.length; r++) for (let c=0; c<=GRID-piece.shape[0].length; c++) {
+    if (!canDrop(piece.shape,c,r)) continue;
+    // score: how many lines would this complete?
+    // Simulate
+    const tmp = board.map(r=>[...r]);
+    for (let pr=0;pr<piece.shape.length;pr++) for (let pc2=0;pc2<piece.shape[pr].length;pc2++) {
+      if (piece.shape[pr][pc2]) tmp[r+pr][c+pc2]=piece.color;
+    }
+    let lc=0;
+    for (let rr=0;rr<GRID;rr++) if(tmp[rr].every(x=>x)) lc++;
+    for (let cc=0;cc<GRID;cc++) if(tmp.every(rr=>rr[cc])) lc++;
+    if (lc > bestScore) { bestScore=lc; bCol=c; bRow=r; }
   }
-
-  switch(e.key) {
-    case 'ArrowLeft':  e.preventDefault(); moveLeft(); break;
-    case 'ArrowRight': e.preventDefault(); moveRight(); break;
-    case 'ArrowDown':  e.preventDefault();
-      if (!paused) { score += 1; moveDown(); updateUI(); }
-      break;
-    case 'ArrowUp':    e.preventDefault(); if (!paused) rotatePiece(); break;
-    case ' ':          e.preventDefault(); if (!paused) hardDrop(); break;
-    case 'p': case 'P':
-      if (!document.getElementById('sword-overlay').style.display === 'flex') {
-        paused = !paused;
-        if (!paused) lastTime = performance.now();
-      }
-      break;
-    case 'Escape':
-      paused = !paused;
-      if (!paused) lastTime = performance.now();
-      break;
+  // Flash hint
+  const rect = gc.getBoundingClientRect();
+  for (let r=0;r<piece.shape.length;r++) for (let c=0;c<piece.shape[r].length;c++) {
+    if (!piece.shape[r][c]) continue;
+    const el = document.createElement('div');
+    el.style.cssText = `position:fixed;z-index:250;background:rgba(255,255,0,.4);border:2px solid #fbbf24;border-radius:4px;pointer-events:none;transition:opacity .5s;width:${CELL-2}px;height:${CELL-2}px;left:${rect.left+(bCol+c)*CELL+1}px;top:${rect.top+(bRow+r)*CELL+1}px`;
+    document.body.appendChild(el);
+    setTimeout(()=>{ el.style.opacity='0'; setTimeout(()=>el.remove(),500); }, 2000);
   }
-});
+}
 
-// ─── TOUCH CONTROLS ──────────────────────────────────────────────────────────
-let touchStartX = 0, touchStartY = 0, touchStartTime = 0;
+function startPowerUpTimer(key) {
+  const tick = () => {
+    if ((powerUps[key]||0) <= 0) { powerUps[key]=0; return; }
+    powerUps[key] -= 1;
+    setTimeout(tick, 1000);
+  };
+  setTimeout(tick, 1000);
+}
 
-canvas.addEventListener('touchstart', e => {
-  touchStartX = e.touches[0].clientX;
-  touchStartY = e.touches[0].clientY;
-  touchStartTime = Date.now();
-  e.preventDefault();
-}, { passive: false });
+// Crystal boost timer
+setInterval(() => { if (crystalBoost > 0) crystalBoost--; }, 1000);
 
-canvas.addEventListener('touchend', e => {
-  if (gameOver || paused) return;
-  const dx = e.changedTouches[0].clientX - touchStartX;
-  const dy = e.changedTouches[0].clientY - touchStartY;
-  const dt = Date.now() - touchStartTime;
-  const absDx = Math.abs(dx), absDy = Math.abs(dy);
+// Rainbow redraw
+setInterval(() => { if (powerUps.rainbow > 0 && !dragging) drawGrid(); }, 200);
 
-  if (dt < 200 && absDx < 10 && absDy < 10) { rotatePiece(); return; }
-  if (absDx > absDy) { dx < 0 ? moveLeft() : moveRight(); }
-  else if (dy > 30) { hardDrop(); }
-  e.preventDefault();
-}, { passive: false });
+// ── INIT / RESTART ────────────────────────────────────────────────────────────
+function startGame() {
+  document.getElementById('ov-start').style.display='none';
+  best = parseInt(localStorage.getItem('bl_best')||'0');
+  board = Array.from({length:GRID}, ()=>Array(GRID).fill(0));
+  score = 0; swordUnlocked = false; crystals = 0;
+  powerUps = {};
+  document.getElementById('sword-btn').classList.remove('unlocked');
+  document.getElementById('crystal-row').classList.remove('visible');
+  spawnTray();
+  resizeCanvas();
+  updateUI();
+  renderTray();
+  drawGrid();
+}
 
-// ─── SWORD CLICK ─────────────────────────────────────────────────────────────
-document.getElementById('sword-icon').addEventListener('click', () => {
-  if (swordUnlocked) openShop();
-});
+function restartGame() {
+  document.getElementById('ov-over').style.display='none';
+  startGame();
+}
 </script>
 </body>
 </html>
