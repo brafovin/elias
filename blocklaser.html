@@ -1282,15 +1282,24 @@ function pointsMultiplier() {
   return Math.round((1.3 + 0.7 * Math.sin(phase)) * 100) / 100;
 }
 
+// Straight = rectangular (idx 0–8), irregular = L/T/S/Z/corner shapes (idx 9+)
+// Irregular get weight 1.4 → appear ~40% more often than if equally distributed
+const STRAIGHT_TMPL  = TEMPLATES.slice(0, 9);
+const IRREGULAR_TMPL = TEMPLATES.slice(9);
+
 function randomPieceForDifficulty() {
   const diff = difficultyLevel();
-  // At low diff: mostly small pieces; at high diff: bigger pieces more likely
-  // We split TEMPLATES into small (idx 0–7) and big (idx 8+)
-  const small = TEMPLATES.slice(0, 8);
-  const big   = TEMPLATES.slice(8);
-  // Probability of picking a big piece: 10% per difficulty level
-  const bigChance = Math.min(diff * 0.12, 0.72);
-  const pool = Math.random() < bigChance ? big : small;
+  const straightW  = STRAIGHT_TMPL.length  * 1.0;   // 9 × 1.0  = 9.0
+  const irregularW = IRREGULAR_TMPL.length * 1.4;   // 14 × 1.4 = 19.6  → ~69% of picks
+  const totalW = straightW + irregularW;
+
+  let pool;
+  if (Math.random() * totalW < straightW) {
+    // At high difficulty skip the tiny pieces (1×1, 1×2)
+    pool = diff >= 4 ? STRAIGHT_TMPL.slice(3) : STRAIGHT_TMPL;
+  } else {
+    pool = IRREGULAR_TMPL;
+  }
   const t = pool[Math.floor(Math.random() * pool.length)];
   return { shape: t.shape.map(r=>[...r]), color: t.color };
 }
