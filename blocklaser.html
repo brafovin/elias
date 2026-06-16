@@ -19,12 +19,69 @@ body {
   user-select: none;
 }
 
+/* BACKGROUND LAYER */
+#bg {
+  position:fixed; inset:0; z-index:0;
+  transition: background 1.8s ease, opacity .5s;
+}
+#bg-overlay {
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  transition: opacity 1.5s;
+}
+
 /* STARS */
-#stars { position:fixed; inset:0; pointer-events:none; z-index:0; }
+#stars { position:fixed; inset:0; pointer-events:none; z-index:1; }
 .star { position:absolute; background:#fff; border-radius:50%; animation:twinkle 2s infinite alternate; }
 @keyframes twinkle { from{opacity:.15} to{opacity:.9} }
 
-#ui { position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; width:100%; max-width:480px; padding:12px 12px 0; gap:10px; }
+/* SUN */
+#sun {
+  position:fixed; border-radius:50%; pointer-events:none; z-index:1;
+  transition: all 1.8s ease;
+  box-shadow: 0 0 60px 20px rgba(255,200,50,.5);
+}
+
+/* ANIMATED BG ELEMENTS */
+.bg-cloud {
+  position:fixed; pointer-events:none; z-index:1;
+  font-size:40px; opacity:.6;
+  animation:cloudDrift linear infinite;
+}
+@keyframes cloudDrift {
+  from { transform:translateX(-120px); }
+  to   { transform:translateX(calc(100vw + 120px)); }
+}
+.bg-palm {
+  position:fixed; bottom:0; pointer-events:none; z-index:1;
+  font-size:64px; opacity:.35;
+}
+.bg-wave {
+  position:fixed; bottom:0; left:0; right:0; height:60px;
+  pointer-events:none; z-index:1; overflow:hidden;
+  transition: opacity 1.5s;
+}
+.wave-svg { width:200%; animation:wavemove 4s linear infinite; }
+@keyframes wavemove { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+/* LEVEL BADGE */
+#level-badge {
+  position:fixed; top:14px; left:50%; transform:translateX(-50%);
+  font-size:11px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
+  padding:4px 14px; border-radius:20px;
+  background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.2);
+  z-index:10; pointer-events:none;
+  transition: background 1.5s, color 1.5s;
+  white-space:nowrap;
+}
+/* BG TRANSITION FLASH */
+#bg-flash {
+  position:fixed; inset:0; pointer-events:none; z-index:9;
+  opacity:0; background:#fff;
+  animation:none;
+}
+@keyframes bgFlashAnim { 0%{opacity:.55} 100%{opacity:0} }
+
+#ui { position:relative; z-index:5; display:flex; flex-direction:column; align-items:center; width:100%; max-width:480px; padding:12px 12px 0; gap:10px; }
 
 /* TOP BAR */
 #topbar {
@@ -283,9 +340,16 @@ canvas.piece-canvas:active { cursor:grabbing; }
 </style>
 </head>
 <body>
+<div id="bg"></div>
+<div id="bg-overlay"></div>
+<div id="bg-flash"></div>
+<div id="sun"></div>
+<div id="bg-elements"></div>
+<div id="bg-wave" style="opacity:0"><svg class="wave-svg" viewBox="0 0 1200 60" preserveAspectRatio="none"><path d="M0,30 C200,60 400,0 600,30 C800,60 1000,0 1200,30 L1200,60 L0,60 Z" fill="rgba(255,255,255,.18)"/><path d="M0,40 C150,10 350,55 600,40 C850,25 1050,55 1200,40 L1200,60 L0,60 Z" fill="rgba(255,255,255,.1)"/></svg></div>
 <div id="stars"></div>
 <div id="flash"></div>
 <canvas id="particle-canvas"></canvas>
+<div id="level-badge">🏖️ Level 0</div>
 <div id="notif">⚡ Blocklaser</div>
 <div id="drag-ghost"><canvas id="ghost-canvas"></canvas></div>
 
@@ -583,6 +647,126 @@ function updateParticles() {
   requestAnimationFrame(updateParticles);
 }
 updateParticles();
+
+// ── BACKGROUND THEMES (every 1000 pts) ───────────────────────────────────────
+const BG_THEMES = [
+  // 0 – Night sky (start)
+  { name:'🌌 Nacht',        bg:'linear-gradient(180deg,#0d0d1f 0%,#1a0a2e 100%)', overlay:'', sun:'', sunColor:'', wave:false, stars:true,  clouds:false, palms:false },
+  // 1000 – Morning beach
+  { name:'🌅 Morgenrot',    bg:'linear-gradient(180deg,#ff7043 0%,#ffb74d 40%,#ffd54f 70%,#e1f5fe 100%)', overlay:'rgba(255,180,0,.08)', sun:'#FFD700', sunColor:'0 0 80px 30px rgba(255,220,50,.6)', wave:true,  stars:false, clouds:true,  palms:false },
+  // 2000 – Summer beach
+  { name:'🏖️ Sommer',       bg:'linear-gradient(180deg,#29b6f6 0%,#4fc3f7 40%,#b3e5fc 70%,#f9d48b 100%)', overlay:'', sun:'#FFD700', sunColor:'0 0 100px 40px rgba(255,230,0,.5)', wave:true, stars:false, clouds:true, palms:true },
+  // 3000 – Tropical noon
+  { name:'🌴 Tropen',       bg:'linear-gradient(180deg,#00bcd4 0%,#26c6da 35%,#80deea 65%,#a5d6a7 100%)', overlay:'rgba(0,200,100,.06)', sun:'#FFF176', sunColor:'0 0 120px 50px rgba(255,255,100,.55)', wave:true, stars:false, clouds:true, palms:true },
+  // 4000 – Sunflower field
+  { name:'🌻 Sonnenblumen', bg:'linear-gradient(180deg,#64b5f6 0%,#90caf9 40%,#fff59d 70%,#f9a825 100%)', overlay:'rgba(255,200,0,.07)', sun:'#FF8F00', sunColor:'0 0 100px 40px rgba(255,160,0,.5)', wave:false, stars:false, clouds:true, palms:false },
+  // 5000 – Coral reef / lagoon
+  { name:'🐠 Lagune',       bg:'linear-gradient(180deg,#0097a7 0%,#00bcd4 35%,#4dd0e1 60%,#b2ebf2 100%)', overlay:'rgba(0,150,200,.1)', sun:'#E0F7FA', sunColor:'0 0 80px 30px rgba(0,230,255,.4)', wave:true, stars:false, clouds:false, palms:true },
+  // 6000 – Golden sunset
+  { name:'🌇 Sonnenunter.', bg:'linear-gradient(180deg,#6a1b9a 0%,#e91e63 25%,#ff5722 50%,#ff9800 75%,#ffd54f 100%)', overlay:'rgba(255,100,0,.08)', sun:'#FF6F00', sunColor:'0 0 120px 50px rgba(255,120,0,.6)', wave:true, stars:false, clouds:true, palms:true },
+  // 7000 – Purple dusk
+  { name:'🌆 Dämmerung',    bg:'linear-gradient(180deg,#1a237e 0%,#7b1fa2 30%,#e91e63 60%,#ff5722 100%)', overlay:'rgba(150,0,200,.1)', sun:'#CE93D8', sunColor:'0 0 80px 30px rgba(200,100,255,.4)', wave:true, stars:true, clouds:false, palms:true },
+  // 8000 – Rainbow sky
+  { name:'🌈 Regenbogen',   bg:'linear-gradient(180deg,#ff1744 0%,#ff9100 15%,#ffea00 30%,#00e676 45%,#00b0ff 60%,#d500f9 80%,#311b92 100%)', overlay:'rgba(255,255,255,.05)', sun:'#fff', sunColor:'0 0 60px 20px rgba(255,255,255,.3)', wave:false, stars:false, clouds:true, palms:false },
+  // 9000 – Volcano
+  { name:'🌋 Vulkan',       bg:'linear-gradient(180deg,#212121 0%,#4e342e 30%,#bf360c 60%,#ff6f00 85%,#ffca28 100%)', overlay:'rgba(255,50,0,.1)', sun:'#FF3D00', sunColor:'0 0 120px 60px rgba(255,60,0,.7)', wave:false, stars:false, clouds:false, palms:false },
+  // 10000+ – Cosmic summer
+  { name:'🚀 Kosmos',       bg:'linear-gradient(180deg,#0d0d1f 0%,#4a0080 30%,#00d4ff 60%,#ff0080 100%)', overlay:'rgba(255,0,255,.06)', sun:'#00d4ff', sunColor:'0 0 120px 60px rgba(0,212,255,.5)', wave:false, stars:true, clouds:false, palms:false },
+];
+
+let currentThemeIdx = -1;
+let bgCloudTimers = [];
+
+function getThemeIdx(sc) {
+  const idx = Math.min(Math.floor(sc / 1000), BG_THEMES.length - 1);
+  return idx;
+}
+
+function applyTheme(idx, animated = true) {
+  if (idx === currentThemeIdx) return;
+  currentThemeIdx = idx;
+  const t = BG_THEMES[idx];
+
+  // Flash transition
+  if (animated) {
+    const fl = document.getElementById('bg-flash');
+    fl.style.animation = 'none'; fl.offsetHeight;
+    fl.style.animation = 'bgFlashAnim .6s forwards';
+  }
+
+  // Background gradient
+  document.getElementById('bg').style.background = t.bg;
+
+  // Stars visibility
+  document.getElementById('stars').style.opacity = t.stars ? '1' : '0';
+
+  // Sun
+  const sun = document.getElementById('sun');
+  if (t.sun) {
+    sun.style.cssText = `width:80px;height:80px;right:18%;top:12%;background:${t.sun};box-shadow:${t.sunColor};opacity:1;`;
+  } else {
+    sun.style.opacity = '0';
+  }
+
+  // Wave
+  document.getElementById('bg-wave').style.opacity = t.wave ? '1' : '0';
+
+  // Clear old bg elements
+  bgCloudTimers.forEach(clearInterval);
+  bgCloudTimers = [];
+  const elWrap = document.getElementById('bg-elements');
+  elWrap.innerHTML = '';
+
+  // Palms
+  if (t.palms) {
+    ['5%','88%'].forEach((left, i) => {
+      const p = document.createElement('div');
+      p.className = 'bg-palm';
+      p.style.cssText = `left:${left};font-size:${58+i*8}px;opacity:.3;`;
+      p.textContent = '🌴';
+      elWrap.appendChild(p);
+    });
+  }
+
+  // Clouds
+  if (t.clouds) {
+    const cloudEmojis = ['☁️','⛅','🌤️'];
+    for (let i = 0; i < 3; i++) {
+      const c = document.createElement('div');
+      c.className = 'bg-cloud';
+      const dur = 18 + i * 9;
+      c.style.cssText = `top:${8+i*7}%;animation-duration:${dur}s;animation-delay:-${i*6}s;font-size:${30+i*10}px;`;
+      c.textContent = cloudEmojis[i % cloudEmojis.length];
+      elWrap.appendChild(c);
+    }
+  }
+
+  // Special decorations per theme
+  if (idx === 4) { // sunflowers
+    for (let i = 0; i < 5; i++) {
+      const f = document.createElement('div');
+      f.style.cssText = `position:fixed;bottom:0;left:${8+i*20}%;font-size:${40+i*6}px;pointer-events:none;z-index:1;opacity:.35;`;
+      f.textContent = '🌻';
+      elWrap.appendChild(f);
+    }
+  }
+  if (idx === 9) { // volcano lava drops
+    const lvl = document.createElement('div');
+    lvl.style.cssText = `position:fixed;bottom:0;left:50%;transform:translateX(-50%);font-size:72px;pointer-events:none;z-index:1;opacity:.3;`;
+    lvl.textContent = '🌋';
+    elWrap.appendChild(lvl);
+  }
+
+  // Level badge
+  const badge = document.getElementById('level-badge');
+  badge.textContent = t.name + ' · ' + (idx * 1000).toLocaleString('de-DE') + '+ Pkt';
+  badge.style.background = idx === 0 ? 'rgba(0,0,0,.4)' : 'rgba(0,0,0,.3)';
+
+  if (animated && idx > 0) {
+    showNotif('🎨 Neuer Hintergrund: ' + t.name + '!');
+    speakWord(t.name.replace(/[^\w\s]/g,'').trim().split(' ').pop()); // say theme name
+  }
+}
 
 // ── STARS ─────────────────────────────────────────────────────────────────────
 for (let i = 0; i < 100; i++) {
@@ -900,10 +1084,10 @@ function placePiece(idx, piece, col, row) {
   }
   trayPieces[idx] = null;
 
-  // base points: number of cells placed
+  // base points: number of cells placed, scaled by milestone multiplier
   let cells = 0;
   for (let r=0;r<piece.shape.length;r++) for (let c=0;c<piece.shape[r].length;c++) if(piece.shape[r][c]) cells++;
-  let pts = cells * 10;
+  let pts = Math.round(cells * 10 * pointsMultiplier());
   if (powerUps.double > 0) pts *= 2;
   score += pts;
 
@@ -1020,8 +1204,8 @@ function clearLines() {
     score += 5000;
   }
 
-  // Score
-  let pts = combo * GRID * 30;
+  // Score — also scaled by milestone multiplier
+  let pts = Math.round(combo * GRID * 30 * pointsMultiplier());
   if (combo > 1) pts = Math.floor(pts * 1.5);
   if (powerUps.double > 0) pts *= 2;
   if (powerUps.rainbow > 0) pts = Math.floor(pts * 1.3);
@@ -1046,11 +1230,31 @@ function clearLines() {
   }
 }
 
+// Difficulty tiers: weight big pieces more as score rises
+function difficultyLevel() {
+  return Math.min(Math.floor(score / 2000), 6); // 0–6
+}
+
+function pointsMultiplier() {
+  // Every 1000 pts the base point rate grows
+  return 1 + Math.floor(score / 1000) * 0.25;
+}
+
+function randomPieceForDifficulty() {
+  const diff = difficultyLevel();
+  // At low diff: mostly small pieces; at high diff: bigger pieces more likely
+  // We split TEMPLATES into small (idx 0–7) and big (idx 8+)
+  const small = TEMPLATES.slice(0, 8);
+  const big   = TEMPLATES.slice(8);
+  // Probability of picking a big piece: 10% per difficulty level
+  const bigChance = Math.min(diff * 0.12, 0.72);
+  const pool = Math.random() < bigChance ? big : small;
+  const t = pool[Math.floor(Math.random() * pool.length)];
+  return { shape: t.shape.map(r=>[...r]), color: t.color };
+}
+
 function spawnTray() {
-  trayPieces = [0,1,2].map(() => {
-    const t = TEMPLATES[Math.floor(Math.random()*TEMPLATES.length)];
-    return { shape: t.shape.map(r=>[...r]), color: t.color };
-  });
+  trayPieces = [0,1,2].map(() => randomPieceForDifficulty());
 }
 
 function checkGameOver() {
@@ -1101,6 +1305,11 @@ function updateUI() {
   document.getElementById('crystal-val').textContent = crystals;
   const pct = Math.min(score/20000*100, 100);
   document.getElementById('progress-bar').style.width = pct + '%';
+  // Background theme check
+  applyTheme(getThemeIdx(score));
+  // Show current multiplier in best label briefly
+  const mult = pointsMultiplier();
+  document.getElementById('best-val').title = `×${mult.toFixed(2)} Multiplikator`;
 }
 
 let notifTimer;
@@ -1240,9 +1449,11 @@ function startGame() {
   board = Array.from({length:GRID}, ()=>Array(GRID).fill(0));
   score = 0; swordUnlocked = false; crystals = 0;
   streak = 0; masterSaid = false;
+  currentThemeIdx = -1;
   powerUps = {};
   document.getElementById('sword-btn').classList.remove('unlocked');
   document.getElementById('crystal-row').classList.remove('visible');
+  applyTheme(0, false);
   spawnTray();
   resizeCanvas();
   updateUI();
